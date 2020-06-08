@@ -1,7 +1,7 @@
 """ Tests of basic VSCiRODSSession functionality
 
-Assumes that there exists an empty "tmp" collection in your iRODS home,
-which will be used for the purpose of testing.
+For this purpose, a temporary ".irodstest" collection will be used
+inside your iRODS home.
 """
 
 import os
@@ -9,14 +9,22 @@ import tempfile
 from vsc_irods.session import VSCiRODSSession
 
 
-def clean_tmpdir(session, tmpdir='~/tmp'):
+def create_tmpdir(session, tmpdir):
     path = session.path.get_absolute_irods_path(tmpdir)
-    session.collections.remove(path, recurse=True)
+    assert not session.collections.exists(path)
     session.collections.create(path, recurse=True)
+    return
 
 
-def test_absolute_paths(session, tmpdir='~/tmp'):
-    clean_tmpdir(session, tmpdir=tmpdir)
+def remove_tmpdir(session, tmpdir):
+    path = session.path.get_absolute_irods_path(tmpdir)
+    assert session.collections.exists(path)
+    session.collections.remove(path, recurse=True)
+    return
+
+
+def test_absolute_paths(session, tmpdir):
+    create_tmpdir(session, tmpdir)
 
     # Check that tmpdir exists
     hits = session.search.glob(tmpdir, debug=True)
@@ -38,9 +46,12 @@ def test_absolute_paths(session, tmpdir='~/tmp'):
         assert hit == session.path.get_absolute_irods_path(d), (hit, d)
     session.path.ichdir('~')
 
+    remove_tmpdir(session, tmpdir)
+    return
 
-def test_put(session, tmpdir='~/tmp'):
-    clean_tmpdir(session, tmpdir=tmpdir)
+
+def test_put(session, tmpdir):
+    create_tmpdir(session, tmpdir)
 
     session.bulk.put('data/README', irods_path=tmpdir, verbose=True)
     hits = session.search.glob(tmpdir + '/*', debug=True)
@@ -58,9 +69,12 @@ def test_put(session, tmpdir='~/tmp'):
             fname = line.rstrip()
             assert '%s/molecules/%s' % (tmpdir, fname) in hits, (hits, fname)
 
+    remove_tmpdir(session, tmpdir)
+    return
 
-def test_remove(session, tmpdir='~/tmp'):
-    clean_tmpdir(session, tmpdir=tmpdir)
+
+def test_remove(session, tmpdir):
+    create_tmpdir(session, tmpdir)
 
     testdir = tmpdir + '/testdir'
     testdir_abs = session.path.get_absolute_irods_path(testdir)
@@ -77,9 +91,12 @@ def test_remove(session, tmpdir='~/tmp'):
     hits = session.search.glob(tmpdir + '/*', debug=True)
     assert len(hits) == 0, hits
 
+    remove_tmpdir(session, tmpdir)
+    return
 
-def test_get(session, tmpdir='~/tmp'):
-    clean_tmpdir(session, tmpdir=tmpdir)
+
+def test_get(session, tmpdir):
+    create_tmpdir(session, tmpdir)
 
     testdir = tmpdir + '/testdir'
     testdir_abs = session.path.get_absolute_irods_path(testdir)
@@ -98,11 +115,15 @@ def test_get(session, tmpdir='~/tmp'):
         f = os.path.join(d, os.path.basename(testfile))
         assert os.path.isfile(f), f
 
+    remove_tmpdir(session, tmpdir)
+    return
+
 
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
-        test_absolute_paths(session)
-        test_put(session)
-        test_remove(session)
-        test_get(session)
-        clean_tmpdir(session)
+        tmpdir = '~/.irodstest'
+        test_absolute_paths(session, tmpdir)
+        test_put(session, tmpdir)
+        test_remove(session, tmpdir)
+        test_get(session, tmpdir)
+

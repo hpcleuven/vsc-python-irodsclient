@@ -119,6 +119,27 @@ def test_get(session, tmpdir):
     return
 
 
+def test_find(session, tmpdir):
+    create_tmpdir(session, tmpdir)
+
+    session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
+    session.path.ichdir(tmpdir)
+
+    references = []
+    for (folder, subfolder, files) in os.walk('./data', topdown=True):
+        references.extend([os.path.join(folder, f) for f in files])
+        references.extend([os.path.join(folder, d) for d in subfolder])
+
+    n = 0
+    for item in session.search.find('./data', topdown=True, debug=False):
+        assert references.count(item) == 1, (item, 'not in', references)
+        n += 1
+    assert n == len(references), '%d items are missing!' % (len(references) - n)
+
+    remove_tmpdir(session, tmpdir)
+    return
+
+
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
@@ -126,4 +147,4 @@ if __name__ == '__main__':
         test_put(session, tmpdir)
         test_remove(session, tmpdir)
         test_get(session, tmpdir)
-
+        test_find(session, tmpdir)

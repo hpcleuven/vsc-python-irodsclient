@@ -190,7 +190,3 @@ class BulkManager(Manager):
                              (item, idest), verbose)
                     self.session.data_objects.put(item, idest + '/',
                                                   **put_options)
-
-    def add_metadata(self, *patterns, avu=[]):
-        """ To be implemented """
-        pass

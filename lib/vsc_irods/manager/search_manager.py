@@ -13,8 +13,8 @@ class SearchManager(Manager):
 
         .. note::
  
-        	Currently only '*' is expanded. The other special characters
-        	'?' and '[]' are not (yet) taken into account.
+            Currently only '*' is expanded. The other special characters
+            '?' and '[]' are not (yet) taken into account.
 
         Examples:
 
@@ -28,9 +28,9 @@ class SearchManager(Manager):
         Arguments:
 
         pattern: str
-			The search pattern
+            The search pattern
 
-		debug: bool (default: False)
+        debug: bool (default: False)
             Set to True for debugging info
         """
         self.log('DBG| processing pattern %s' % pattern, debug)
@@ -100,7 +100,7 @@ class SearchManager(Manager):
             Root of the directory tree in which to search
 
         pattern: str (default: '*')
-			The search pattern
+            The search pattern
 
         use_wholename: bool (default: False)
             Whether it is the whole (absolute) path name that has to

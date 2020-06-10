@@ -40,7 +40,7 @@ class VSCiRODSSession(iRODSSession):
             env_file = os.path.expanduser('~/.irods/irods_environment.json')
 
         ssl_context = ssl.create_default_context(
-										purpose=ssl.Purpose.SERVER_AUTH,
+                                        purpose=ssl.Purpose.SERVER_AUTH,
                                         cafile=None, capath=None, cadata=None)
         ssl_settings = {'ssl_context': ssl_context}
 

@@ -14,7 +14,7 @@ class PathManager(Manager):
 
         .. note::
 
-        	This directory is assumed to be given by
+            This directory is assumed to be given by
             ``/<irods_zone_name>/home/<irods_user_name>/``
             This might be different on other iRODS servers.
 

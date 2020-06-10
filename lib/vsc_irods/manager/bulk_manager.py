@@ -19,24 +19,24 @@ class BulkManager(Manager):
         """ Remove iRODS data objects and/or collections,
         in a manner that resembles the UNIX 'rm' command.
 
-		Examples:
+        Examples:
 
         >>> session.bulk.remove('tmpdir*', recurse=True)
         >>> session.bulk.remove('~/molecule_database/*.xyz')
 
-		Arguments:
+        Arguments:
 
-		patterns: (list of) str
-			One or more search patterns. Matching data objects
+        patterns: (list of) str
+            One or more search patterns. Matching data objects
             (and, if used recursively, collections) will be removed.
 
-		TODO: remaining arguments
+        TODO: remaining arguments
         """
         for pattern in patterns:
             hits = self.session.search.glob(pattern)
 
             if len(hits) == 0:
-				# Always print this as a warning
+                # Always print this as a warning
                 self.log('Cannot remove %s (no such file or directory)' % \
                          pattern)
 
@@ -66,19 +66,19 @@ class BulkManager(Manager):
         """ Copy iRODS data objects and/or collections to the
 		local machine, in a manner that resembles the UNIX 'cp' command.
 
-		Examples:
+        Examples:
 
         >>> session.bulk.get('tmpdir*', recurse=True)
         >>> session.bulk.get('~/irods_db/*.xyz', local_path='./local_db')
 
-		Arguments:
+        Arguments:
 
-		patterns: (list of) str
-			One or more search patterns. Matching data objects
+        patterns: (list of) str
+            One or more search patterns. Matching data objects
             (and, if used recursively, collections) will be copied
             to the local machine.
 
-		TODO: remaining arguments
+        TODO: remaining arguments
         """
         more_than_one_item = sum([len(self.session.search.glob(p))
                                   for p in patterns]) > 1
@@ -92,7 +92,7 @@ class BulkManager(Manager):
             hits = self.session.search.glob(pattern)
 
             if len(hits) == 0:
-				# Always print this as a warning
+                # Always print this as a warning
                 self.log('Cannot get %s (no such file or directory)' % pattern,
                          True)
 
@@ -134,19 +134,19 @@ class BulkManager(Manager):
         """ Copy local files and/or folders to the iRODS server,
         in a manner that resembles the UNIX 'cp' command.
 
-		Examples:
+        Examples:
 
         >>> session.bulk.put('tmpdir*', recurse=True)
         >>> session.bulk.get('~/local_db/*.xyz', irods_path='./irods_db/')
 
-		Arguments:
+        Arguments:
 
-		patterns: (list of) str
-			One or more search patterns. Matching files on the local machine
+        patterns: (list of) str
+            One or more search patterns. Matching files on the local machine
             (and, if used recursively, collections) will be copied to the
             iRODS server.
 
-		TODO: remaining arguments
+        TODO: remaining arguments
         """
         more_than_one_item = sum([len(glob.glob(p)) for p in patterns]) > 1
 

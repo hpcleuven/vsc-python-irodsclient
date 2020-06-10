@@ -6,9 +6,19 @@ from vsc_irods.manager import Manager
 
 class SearchManager(Manager):
     """ A class for easier searching in the iRODS file system """
-    def glob(self, pattern, debug=False):
-        """ Returns a list of iRODS collection and data object paths
-        which match the given pattern, similar to the glob.glob builtin.
+
+    def glob(self, *args, debug=False, **kwargs):
+        """ As iglob(), but returns a list instead of an iterator,
+        similar to the glob.iglob builtin.
+        """
+        results = [hit for hit in self.iglob(*args, debug=debug, **kwargs)]
+
+        self.log('DBG| returning %s' % str(results), debug)
+        return results
+
+    def iglob(self, pattern, debug=False):
+        """ Returns an iterator of iRODS collection and data object paths
+        which match the given pattern, similar to the glob.iglob builtin.
 
         .. note::
  
@@ -34,18 +44,17 @@ class SearchManager(Manager):
         """
         self.log('DBG| glob pattern = %s' % pattern, debug)
 
-        results = []
-
         if '*' not in pattern:
             path = self.session.path.get_absolute_irods_path(pattern)
 
             if (self.session.data_objects.exists(path) or
                 self.session.collections.exists(path)):
-                results.append(pattern)
+                yield pattern
+            else:
+                yield
         else:
             index = pattern.index('*')
             path = os.path.dirname(pattern[:index])
-
             remainder = pattern[len(path)+1:] if len(path) > 0 else pattern
 
             self.log('DBG| path = %s' % path, debug)
@@ -54,10 +63,8 @@ class SearchManager(Manager):
             gen = self.find(irods_path=path, pattern=remainder, types='d,f',
                             use_wholename=True, topdown=True, debug=debug)
 
-            results.extend([hit for hit in gen])
-
-        self.log('DBG| returning %s' % results, debug)
-        return results
+            for result in gen:
+                yield result
 
     def find(self, irods_path='.', pattern='*', use_wholename=False,
              types='d,f', topdown=True, debug=False):

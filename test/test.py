@@ -140,6 +140,20 @@ def test_find(session, tmpdir):
     return
 
 
+def test_add_metadata(session, tmpdir):
+    create_tmpdir(session, tmpdir)
+
+    session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
+
+    d = os.path.join(tmpdir, 'data')
+    for obj in session.bulk.get(d, recurse=True, return_data_objects=True,
+                                verbose=True):
+        obj.metadata.add('name', obj.name)
+
+    remove_tmpdir(session, tmpdir)
+    return
+
+
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
@@ -148,3 +162,4 @@ if __name__ == '__main__':
         test_remove(session, tmpdir)
         test_get(session, tmpdir)
         test_find(session, tmpdir)
+        test_add_metadata(session, tmpdir)

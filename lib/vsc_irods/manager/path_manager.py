@@ -6,7 +6,14 @@ class PathManager(Manager):
     """ A class dealing with paths on the iRODS file system """
     def __init__(self, session):
         Manager.__init__(self, session)
-        self._icwd = self.get_irods_home()
+
+        # Register the (initial) iRODS current working directory
+        try:
+            # In case "irods_cwd" was explicitly specified
+            # in the irods_environment.json file:
+            self._icwd = self.session.pool.account.cwd
+        except AttributeError:
+            self._icwd = self.get_irods_home()
 
     def get_irods_home(self):
         """ Returns the path to the iRODS "home" directory,

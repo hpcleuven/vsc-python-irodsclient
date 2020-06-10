@@ -11,16 +11,14 @@ class PathManager(Manager):
     def get_irods_home(self):
         """ Returns the path to the iRODS "home" directory,
         which is e.g. used to expand '~/' in search patterns.
-
-        .. note::
-
-            This directory is assumed to be given by
-            ``/<irods_zone_name>/home/<irods_user_name>/``
-            This might be different on other iRODS servers.
-
         """
-        return os.path.join('/', self.session.pool.account.client_zone, 'home',
-                            self.session.pool.account.client_user, '')
+        try:
+            # In case "irods_home" was explicitly specified
+            # in the irods_environment.json file:
+            return self.session.pool.account.home
+        except AttributeError:
+            return os.path.join('/', self.session.pool.account.client_zone,
+                                'home', self.session.pool.account.client_user)
 
     def get_irods_cwd(self):
         """ Returns the current workding directory on iRODS,

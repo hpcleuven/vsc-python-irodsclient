@@ -6,7 +6,6 @@ from vsc_irods.manager import Manager
 
 class SearchManager(Manager):
     """ A class for easier searching in the iRODS file system """
-
     def glob(self, pattern, debug=False):
         """ Returns a list of iRODS collection and data object paths
         which match the given pattern, similar to the glob.glob builtin.
@@ -33,53 +32,31 @@ class SearchManager(Manager):
         debug: bool (default: False)
             Set to True for debugging info
         """
-        self.log('DBG| processing pattern %s' % pattern, debug)
+        self.log('DBG| glob pattern = %s' % pattern, debug)
+
+        results = []
 
         if '*' not in pattern:
             path = self.session.path.get_absolute_irods_path(pattern)
-            results = []
+
             if (self.session.data_objects.exists(path) or
                 self.session.collections.exists(path)):
                 results.append(pattern)
-
-            self.log('DBG| returning %s' % results, debug)
-            return results
-
-        index = pattern.index('*')
-        basedir = os.path.dirname(pattern[:index])
-        remainder = pattern[len(basedir)+1:] if len(basedir) > 0 else pattern
-        basedir_abs = self.session.path.get_absolute_irods_path(basedir)
-        collection = self.session.collections.get(basedir_abs)
-
-        self.log('DBG| basedir = %s' % basedir, debug)
-        self.log('DBG| basedir_abs = %s' % basedir_abs, debug)
-        self.log('DBG| remainder = %s' % remainder, debug)
-
-        results = []
-        if '/' not in remainder:
-            for coll in collection.subcollections:
-                if fnmatch.fnmatch(coll.name, remainder):
-                    results.append(os.path.join(basedir, coll.name))
-
-            for obj in collection.data_objects:
-                if fnmatch.fnmatch(obj.name, remainder):
-                    results.append(os.path.join(basedir, obj.name))
         else:
-            index = remainder.index('/')
-            common = os.path.join(basedir_abs, remainder[:index])
-            self.log('DBG| common = %s' % common, debug)
+            index = pattern.index('*')
+            path = os.path.dirname(pattern[:index])
 
-            for coll in collection.subcollections:
-                d = os.path.join(basedir_abs, coll.name)
-                match = fnmatch.fnmatch(d, common)
-                self.log('DBG| coll.name = %s ; d = %s ; match = %s' % \
-                         (coll.name, match), d, debug)
-                if match:
-                    p = os.path.join(basedir, coll.name,   remainder[index+1:])
-                    self.log('DBG| recursion with pattern p = %s' % p, debug)
-                    results.extend(self.glob(p))
+            remainder = pattern[len(path)+1:] if len(path) > 0 else pattern
 
-        self.log('DBG| returning %s' % str(results), debug)
+            self.log('DBG| path = %s' % path, debug)
+            self.log('DBG| remainder = %s' % remainder, debug)
+
+            gen = self.find(irods_path=path, pattern=remainder, types='d,f',
+                            use_wholename=True, topdown=True, debug=debug)
+
+            results.extend([hit for hit in gen])
+
+        self.log('DBG| returning %s' % results, debug)
         return results
 
     def find(self, irods_path='.', pattern='*', use_wholename=False,

@@ -33,7 +33,7 @@ class VSCiRODSSession(iRODSSession):
         Use '-' for stdout, None for /dev/null,
         any other string for a text file, or a file handle
     """
-    def __init__(self, txt='-'):
+    def __init__(self, txt='-', **kwargs):
         try:
             env_file = os.environ['IRODS_ENVIRONMENT_FILE']
         except KeyError:
@@ -44,7 +44,8 @@ class VSCiRODSSession(iRODSSession):
                                         cafile=None, capath=None, cadata=None)
         ssl_settings = {'ssl_context': ssl_context}
 
-        iRODSSession.__init__(self, irods_env_file=env_file, **ssl_settings)
+        iRODSSession.__init__(self, irods_env_file=env_file, **ssl_settings,
+                              **kwargs)
 
         self.set_log_output(txt)
         self.path = PathManager(self)

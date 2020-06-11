@@ -33,14 +33,10 @@ class BulkManager(Manager):
         TODO: remaining arguments
         """
         for pattern in patterns:
-            hits = self.session.search.glob(pattern)
+            num_hits = 0
 
-            if len(hits) == 0:
-                # Always print this as a warning
-                self.log('Cannot remove %s (no such file or directory)' % \
-                         pattern)
-
-            for item in hits:
+            for item in self.session.search.iglob(pattern):
+                num_hits += 1
                 path = self.session.path.get_absolute_irods_path(item)
 
                 if self.session.collections.exists(path):
@@ -61,6 +57,11 @@ class BulkManager(Manager):
                         self.log('Removing object %s' % path, verbose)
                         self.session.data_objects.unlink(path, **unlink_options)
 
+            if num_hits == 0:
+                # Always print this as a warning
+                self.log('Cannot remove %s (no such file or directory)' % \
+                         pattern, True)
+
     def get(self, *patterns, local_path='.', recurse=False, get_options={},
             return_data_objects=False, verbose=False):
         """ Copy iRODS data objects and/or collections to the
@@ -80,23 +81,25 @@ class BulkManager(Manager):
 
         TODO: remaining arguments
         """
-        more_than_one_item = sum([len(self.session.search.glob(p))
-                                  for p in patterns]) > 1
+        counter = 0
+        for p in patterns:
+            for item in self.session.search.iglob(p):
+                counter += 1
+                if counter > 1:
+                    break
+        more_than_one_item = counter > 1
 
         if more_than_one_item and not return_data_objects:
             assert os.path.isdir(local_path), \
                    'Destination %s does not exist' % local_path
 
         objects = []
+
         for pattern in patterns:
-            hits = self.session.search.glob(pattern)
+            num_hits = 0
 
-            if len(hits) == 0:
-                # Always print this as a warning
-                self.log('Cannot get %s (no such file or directory)' % pattern,
-                         True)
-
-            for item in hits:
+            for item in self.session.search.iglob(pattern):
+                num_hits += 1
                 path = self.session.path.get_absolute_irods_path(item)
 
                 if self.session.collections.exists(path):
@@ -127,6 +130,11 @@ class BulkManager(Manager):
                                                         **get_options)
                     objects.append(obj)
 
+            if num_hits == 0:
+                # Always print this as a warning
+                self.log('Cannot get %s (no such file or directory)' % pattern,
+                         True)
+
         return objects if return_data_objects else None
 
     def put(self, *patterns, irods_path='.', recurse=False, create_options={},
@@ -148,7 +156,13 @@ class BulkManager(Manager):
 
         TODO: remaining arguments
         """
-        more_than_one_item = sum([len(glob.glob(p)) for p in patterns]) > 1
+        counter = 0
+        for p in patterns:
+            for item in glob.iglob(p):
+                counter += 1
+                if counter > 1:
+                    break
+        more_than_one_item = counter > 1
 
         idest = self.session.path.get_absolute_irods_path(irods_path)
 
@@ -157,14 +171,11 @@ class BulkManager(Manager):
                    'Collection %s does not exist' % idest
 
         for pattern in patterns:
-            hits = glob.glob(pattern)
+            num_hits = 0
 
-            if len(hits) == 0:
-				# Always print this as a warning
-                self.log('Cannot put %s (no such file or directory)' % pattern,
-                         True)
+            for item in glob.iglob(pattern):
+                num_hits += 1
 
-            for item in hits:
                 if os.path.isdir(item):
                     if recurse:
                         d = os.path.basename(item)
@@ -190,3 +201,8 @@ class BulkManager(Manager):
                              (item, idest), verbose)
                     self.session.data_objects.put(item, idest + '/',
                                                   **put_options)
+
+            if num_hits == 0:
+                # Always print this as a warning
+                self.log('Cannot put %s (no such file or directory)' % pattern,
+                         True)

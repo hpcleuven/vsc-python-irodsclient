@@ -126,12 +126,12 @@ def test_find(session, tmpdir):
     session.path.ichdir(tmpdir)
 
     references = []
-    for (folder, subfolder, files) in os.walk('./data', topdown=True):
+    for (folder, subfolder, files) in os.walk('./data'):
         references.extend([os.path.join(folder, f) for f in files])
         references.extend([os.path.join(folder, d) for d in subfolder])
 
     n = 0
-    for item in session.search.find('./data', topdown=True, debug=False):
+    for item in session.search.find('./data', debug=False):
         assert references.count(item) == 1, (item, 'not in', references)
         n += 1
     assert n == len(references), '%d items are missing!' % (len(references) - n)

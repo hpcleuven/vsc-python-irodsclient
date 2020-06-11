@@ -1,6 +1,9 @@
 import os
 import fnmatch
 import warnings
+import itertools
+from irods.column import Criterion
+from irods.models import Collection, DataObject
 from vsc_irods.manager import Manager
 
 
@@ -61,13 +64,13 @@ class SearchManager(Manager):
             self.log('DBG| remainder = %s' % remainder, debug)
 
             gen = self.find(irods_path=path, pattern=remainder, types='d,f',
-                            use_wholename=True, topdown=True, debug=debug)
+                            use_wholename=True, debug=debug)
 
             for result in gen:
                 yield result
 
     def find(self, irods_path='.', pattern='*', use_wholename=False,
-             types='d,f', topdown=True, debug=False):
+             types='d,f', debug=False):
         """ Returns a list of iRODS collection and data object paths
         which match the given pattern, similar to the UNIX `find` command.
 
@@ -98,22 +101,20 @@ class SearchManager(Manager):
             * 'd' for directories (i.e. collections)
             * 'f' for files (i.e. data objects)
 
-        topdown: bool (default: True)
-            Whether to start from the top directory and go down the tree,
-            or to start from the bottom and climb up the tree. This only
-            affects the order of the results.
-
 		debug: bool (default: False)
             Set to True for debugging info
         """
-        def get_wholename(abs_path, abs_root):
-            wholename = os.path.join(irods_path, abs_path[len(abs_root)+1:])
-            self.log('DBG| abs_path = %s ; abs_root = %s ; wholename = %s' % \
-                     (abs_path, abs_root, wholename), debug)
-            return wholename
+        def get_final_path(path_abs):
+            # Paths returned by find() must start with the given irods_path
+            # This function determines this path from the given absolute path,
+            # and the irods_path and irods_path_abs variables
+            path_final = os.path.join(irods_path,
+                                      path_abs[len(irods_path_abs)+1:])
+            msg = 'DBG| path_abs = %s ; irods_path_abs = %s ; path_final = %s'
+            self.log(msg % (path_abs, irods_path_abs, path_final), debug)
+            return path_final
 
-        path = self.session.path.get_absolute_irods_path(irods_path)
-        root = self.session.collections.get(path)
+        irods_path_abs = self.session.path.get_absolute_irods_path(irods_path)
 
         if not use_wholename and '/' in pattern:
             msg = "Pattern %s contains a slash. UNIX file names usually don't, "
@@ -121,22 +122,49 @@ class SearchManager(Manager):
             msg += "'wholename=True' may help you find what you're looking for."
             warning.warn(msg % pattern)
 
-        self.log('DBG| find pattern = %s' % pattern, debug)
+        for t in types.split(','):
+            if t == 'd':
+                coll_name = os.path.join(irods_path_abs, pattern)
+                coll_name = coll_name.replace('*', '%')
+                self.log('DBG| find pattern coll_name = %s' % coll_name, debug)
 
-        for (collection, subcollections, objects) in root.walk(topdown=topdown):
-            self.log('DBG| collection = %s' % collection.name, debug)
+                criteria = [Criterion('like', Collection.name, coll_name)]
+                fields = [Collection.name]
 
-            for t in types.split(','):
-                if t == 'f':
-                    for obj in objects:
-                        wholename = get_wholename(obj.path, path)
-                        name = wholename if use_wholename else obj.name
-                        if fnmatch.fnmatch(name, pattern):
-                            yield wholename
+                q = self.session.query(*fields).filter(*criteria)
 
-                elif t == 'd':
-                    for subcoll in subcollections:
-                        wholename = get_wholename(subcoll.path, path)
-                        name = wholename if use_wholename else subcoll.name
-                        if fnmatch.fnmatch(name, pattern):
-                            yield wholename
+                for result in q.get_results():
+                    path = result[Collection.name]
+                    path = get_final_path(path)
+                    yield path
+
+            elif t == 'f':
+                obj_name = os.path.basename(pattern).replace('*', '%')
+                self.log('DBG| find pattern obj_name = %s' % obj_name, debug)
+
+                # PRC uses Collection.name criteria as follows:
+                #   /.../dir -> only files in this collection
+                #   /.../dir/% -> only files in all subcollections
+                # To cover both, we need two generators.
+                dirs = [os.path.dirname(pattern),
+                        os.path.join(os.path.dirname(pattern), '*')]
+
+                generators = []
+                for d in dirs:
+                    coll_name = os.path.join(irods_path_abs, d).rstrip('/')
+                    coll_name = coll_name.replace('*', '%')
+                    self.log('DBG| find pattern coll_name = %s' % coll_name,
+                             debug)
+
+                    criteria = [Criterion('like', Collection.name, coll_name),
+                                Criterion('like', DataObject.name, obj_name)]
+                    fields = [Collection.name, DataObject.name]
+
+                    q = self.session.query(*fields).filter(*criteria)
+                    generators.append(q.get_results())
+
+                for result in itertools.chain(*generators):
+                    path = os.path.join(result[Collection.name],
+                                        result[DataObject.name])
+                    path = get_final_path(path)
+                    yield path

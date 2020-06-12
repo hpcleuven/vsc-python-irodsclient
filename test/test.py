@@ -141,10 +141,9 @@ def test_find(session, tmpdir):
 
 
 def test_add_metadata(session, tmpdir):
-    from irods.meta import iRODSMeta
-    from irods.models import DataObject
-
     create_tmpdir(session, tmpdir)
+
+    from irods.models import DataObject
 
     attribute = 'kind'
     values = ['organic', 'inorganic', '%org%']
@@ -162,11 +161,12 @@ def test_add_metadata(session, tmpdir):
 
     # Generate and set metadata
     for item in session.search.find(d, '*.xyz', debug=True):
-        path = session.path.get_absolute_irods_path(item)
         value = generate_value(item)
-        meta = iRODSMeta(attribute, value)
-        session.metadata.set(DataObject, path, meta)
-        print('Setting attribute "%s" = "%s" for %s' % (attribute, value, item))
+        path = session.path.get_absolute_irods_path(item)
+        session.bulk.add_metadata(path, object_avu=(attribute, value),
+                                  verbose=True)
+        metadata = session.metadata.get(DataObject, path)
+        print('Checking metadata for %s: %s' % (item, metadata))
         counts[value] += 1
 
     assert sum(counts.values()) > 0, counts

@@ -3,7 +3,7 @@ import fnmatch
 import warnings
 import itertools
 from irods.column import Criterion
-from irods.models import Collection, DataObject
+from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from vsc_irods.manager import Manager
 
 
@@ -70,13 +70,14 @@ class SearchManager(Manager):
                 yield result
 
     def find(self, irods_path='.', pattern='*', use_wholename=False,
-             types='d,f', debug=False):
+             types='d,f', collection_avu=[], object_avu=[], debug=False):
         """ Returns a list of iRODS collection and data object paths
         which match the given pattern, similar to the UNIX `find` command.
 
         Examples:
 
-        >>> session.find('.', name='*mol*/c*.xyz', types='f')
+        >>> session.find('.', name='*mol*/*.xyz', types='f',
+                         object_avu=('=,kind', 'like,%organic'))
             ['data/molecules/c6h6.xyz', './data/molecules/ch3cooh.xyz']
         >>> session.find('~/data', name='molecules', types='d')
             ['~/data/molecules']
@@ -101,6 +102,14 @@ class SearchManager(Manager):
             * 'd' for directories (i.e. collections)
             * 'f' for files (i.e. data objects)
 
+        collection_avu: tuple or list of tuples (default: [])
+            One or several attribute-value-unit patterns to be used
+            in filtering collections.
+
+        object_avu: tuple or list of tuples (default: [])
+            One or several attribute-value-unit patterns to be used
+            in filtering data objects.
+
 		debug: bool (default: False)
             Set to True for debugging info
         """
@@ -113,6 +122,20 @@ class SearchManager(Manager):
             msg = 'DBG| path_abs = %s ; irods_path_abs = %s ; path_final = %s'
             self.log(msg % (path_abs, irods_path_abs, path_final), debug)
             return path_final
+
+
+        def parse_avu_component(component):
+            if component.count(',') == 0:
+                operation, meta_pattern = '=', component
+            elif component.count(',') == 1:
+                operation, meta_pattern = component.split(',')
+            else:
+                raise ValueError('Cannot parse AVU component: %s' % component)
+            return operation, meta_pattern
+
+
+        if isinstance(object_avu, tuple): object_avu = [object_avu]
+        if isinstance(collection_avu, tuple): collection_avu = [collection_avu]
 
         irods_path_abs = self.session.path.get_absolute_irods_path(irods_path)
 
@@ -130,6 +153,18 @@ class SearchManager(Manager):
 
                 criteria = [Criterion('like', Collection.name, coll_name)]
                 fields = [Collection.name]
+
+                meta_fields = [CollectionMeta.name, CollectionMeta.value,
+                               CollectionMeta.units]
+
+                for avu in collection_avu:
+                    for item, field in zip(avu, meta_fields):
+                        operation, meta_pattern = parse_avu_component(item)
+                        self.log('DBG| AVU criterion: %s %s %s' % \
+                                 (operation, field, meta_pattern), debug)
+                        criterion = Criterion(operation, field, meta_pattern)
+                        criteria.append(criterion)
+                        fields.append(field)
 
                 q = self.session.query(*fields).filter(*criteria)
 
@@ -149,6 +184,9 @@ class SearchManager(Manager):
                 dirs = [os.path.dirname(pattern),
                         os.path.join(os.path.dirname(pattern), '*')]
 
+                meta_fields = [DataObjectMeta.name, DataObjectMeta.value,
+                               DataObjectMeta.units]
+
                 generators = []
                 for d in dirs:
                     coll_name = os.path.join(irods_path_abs, d).rstrip('/')
@@ -159,6 +197,16 @@ class SearchManager(Manager):
                     criteria = [Criterion('like', Collection.name, coll_name),
                                 Criterion('like', DataObject.name, obj_name)]
                     fields = [Collection.name, DataObject.name]
+
+                    for avu in object_avu:
+                        for item, field in zip(avu, meta_fields):
+                            operation, meta_pattern = parse_avu_component(item)
+                            self.log('DBG| AVU criterion: %s %s %s' % \
+                                     (operation, field, meta_pattern), debug)
+                            criterion = Criterion(operation, field,
+                                                  meta_pattern)
+                            criteria.append(criterion)
+                            fields.append(field)
 
                     q = self.session.query(*fields).filter(*criteria)
                     generators.append(q.get_results())

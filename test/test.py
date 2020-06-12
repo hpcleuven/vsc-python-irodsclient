@@ -5,6 +5,7 @@ inside your iRODS home.
 """
 
 import os
+import fnmatch
 import tempfile
 from vsc_irods.session import VSCiRODSSession
 
@@ -177,19 +178,33 @@ def test_add_metadata(session, tmpdir):
 
     for value, operator in zip(values, ['=', '=', 'like']):
         object_avu = ('=,%s' % attribute, '%s,%s' % (operator, value))
+        pattern = value.replace('%', '*')
+
         counter = 0
 
+        # Check that find() yields the expected hits
         for item in session.search.find(d, '*.xyz', types='f', debug=True,
                                         object_avu=object_avu):
             counter += 1
             print('Matching attribute "%s" "%s" "%s" for %s' % \
                 (attribute, operator, value, item))
-
-            if operator == '=':
-                assert generate_value(item) == value, (item, value)
+            assert fnmatch.fnmatch(generate_value(item), pattern), (item, value)
 
         assert counts[value] == counter, (value, counts[value], counter)
         counter_sum += counter
+
+        # Test for 'piping' an AVU-containing search into a bulk operation
+        iterator = session.search.find(d, '*.xyz', types='f', debug=True,
+                                       object_avu=object_avu)
+        counter = 0
+
+        for obj in session.bulk.get(iterator, return_data_objects=True):
+            counter += 1
+            key = attribute.title()
+            value_get = obj.metadata.get_one(key).value
+            assert fnmatch.fnmatch(value_get, pattern), (value_get, value)
+
+        assert counts[value] == counter, (value, counts[value], counter)
 
     assert counter_sum > 0
 

@@ -141,14 +141,57 @@ def test_find(session, tmpdir):
 
 
 def test_add_metadata(session, tmpdir):
+    from irods.meta import iRODSMeta
+    from irods.models import DataObject
+
     create_tmpdir(session, tmpdir)
 
-    session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
+    attribute = 'kind'
+    values = ['organic', 'inorganic', '%org%']
+    counts = {value: 0 for value in values}
 
-    d = os.path.join(tmpdir, 'data')
-    for obj in session.bulk.get(d, recurse=True, return_data_objects=True,
-                                verbose=True):
-        obj.metadata.add('name', obj.name)
+    def generate_value(path):
+        is_organic = os.path.basename(path).lower().startswith('c')
+        return 'organic' if is_organic else 'inorganic'
+
+    # Upload the molecules to iRODS
+    session.bulk.put('data/molecules', irods_path=tmpdir, recurse=True,
+                     verbose=True)
+
+    d = os.path.join(tmpdir, 'molecules')
+
+    # Generate and set metadata
+    for item in session.search.find(d, '*.xyz', debug=True):
+        path = session.path.get_absolute_irods_path(item)
+        value = generate_value(item)
+        meta = iRODSMeta(attribute, value)
+        session.metadata.set(DataObject, path, meta)
+        print('Setting attribute "%s" = "%s" for %s' % (attribute, value, item))
+        counts[value] += 1
+
+    assert sum(counts.values()) > 0, counts
+    counts['%org%'] = counts['organic'] + counts['inorganic']
+
+    # Test the metadata search filter
+    counter_sum = 0
+
+    for value, operator in zip(values, ['=', '=', 'like']):
+        object_avu = ('=,%s' % attribute, '%s,%s' % (operator, value))
+        counter = 0
+
+        for item in session.search.find(d, '*.xyz', types='f', debug=True,
+                                        object_avu=object_avu):
+            counter += 1
+            print('Matching attribute "%s" "%s" "%s" for %s' % \
+                (attribute, operator, value, item))
+
+            if operator == '=':
+                assert generate_value(item) == value, (item, value)
+
+        assert counts[value] == counter, (value, counts[value], counter)
+        counter_sum += counter
+
+    assert counter_sum > 0
 
     remove_tmpdir(session, tmpdir)
     return

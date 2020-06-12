@@ -1,5 +1,7 @@
 import os
 import glob
+from irods.meta import iRODSMeta
+from irods.models import Collection, DataObject
 from vsc_irods.manager import Manager
 
 
@@ -206,3 +208,59 @@ class BulkManager(Manager):
                 # Always print this as a warning
                 self.log('Cannot put %s (no such file or directory)' % pattern,
                          True)
+
+    def add_metadata(self, *patterns, recurse=False, collection_avu=[],
+                     object_avu=[], verbose=False):
+        """ Add metadata to iRODS data objects and/or collections.
+
+        Examples:
+
+        >>> session.bulk.add_metadata('tmpdir*', recurse=True,
+                                      object_avu=('is_temporary_file',)),
+                                      collection_avu=('is_temporary_dir',))
+
+        Arguments:
+
+        patterns: (list of) str
+            One or more search patterns. Matching data objects
+            (and, if used recursively, collections) will be copied
+            to the local machine.
+
+        TODO: remaining arguments
+        """
+        if isinstance(object_avu, tuple): object_avu = [object_avu]
+        if isinstance(collection_avu, tuple): collection_avu = [collection_avu]
+
+        for pattern in patterns:
+            num_hits = 0
+
+            for item in self.session.search.iglob(pattern):
+                num_hits += 1
+                path = self.session.path.get_absolute_irods_path(item)
+
+                if self.session.collections.exists(path):
+                    # Item is a collection, not an object
+                    if recurse:
+                        for avu in collection_avu:
+                            self.log('Adding metadata to collection %s' % path,
+                                     verbose)
+                            meta = iRODSMeta(*avu)
+                            self.session.metadata.set(Collection, path, meta)
+
+                        self.add_metadata(item + '/*', recurse=True,
+                                          collection_avu=collection_avu,
+                                          object_avu=object_avu,
+                                          verbose=verbose)
+                    else:
+                        self.log('Skipping collection %s (no recursion)' % \
+                                 item, verbose)
+                else:
+                    for avu in object_avu:
+                        self.log('Adding metadata to object %s' % path, verbose)
+                        meta = iRODSMeta(*avu)
+                        self.session.metadata.set(DataObject, path, meta)
+
+            if num_hits == 0:
+                # Always print this as a warning
+                msg = 'Cannot add metadata to %s (no such file or directory)'
+                self.log(msg % pattern, True)

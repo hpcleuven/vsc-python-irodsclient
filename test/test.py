@@ -141,13 +141,14 @@ def test_find(session, tmpdir):
     return
 
 
-def test_add_metadata(session, tmpdir):
+def test_metadata(session, tmpdir):
     create_tmpdir(session, tmpdir)
 
     from irods.models import DataObject
 
     attribute = 'kind'
     values = ['organic', 'inorganic', '%org%']
+    operators = ['=', '=', 'like']
     counts = {value: 0 for value in values}
 
     def generate_value(path):
@@ -164,8 +165,8 @@ def test_add_metadata(session, tmpdir):
     for item in session.search.find(d, '*.xyz', debug=True):
         value = generate_value(item)
         path = session.path.get_absolute_irods_path(item)
-        session.bulk.add_metadata(path, object_avu=(attribute, value),
-                                  verbose=True)
+        session.bulk.metadata(path, object_avu=(attribute, value),
+                              action='add', verbose=True)
         metadata = session.metadata.get(DataObject, path)
         print('Checking metadata for %s: %s' % (item, metadata))
         counts[value] += 1
@@ -176,7 +177,7 @@ def test_add_metadata(session, tmpdir):
     # Test the metadata search filter
     counter_sum = 0
 
-    for value, operator in zip(values, ['=', '=', 'like']):
+    for value, operator in zip(values, operators):
         object_avu = ('=,%s' % attribute, '%s,%s' % (operator, value))
         pattern = value.replace('%', '*')
 
@@ -198,7 +199,8 @@ def test_add_metadata(session, tmpdir):
                                        object_avu=object_avu)
         counter = 0
 
-        for obj in session.bulk.get(iterator, return_data_objects=True):
+        for obj in session.bulk.get(iterator, return_data_objects=True,
+                                    verbose=True):
             counter += 1
             key = attribute.title()
             value_get = obj.metadata.get_one(key).value
@@ -207,6 +209,26 @@ def test_add_metadata(session, tmpdir):
         assert counts[value] == counter, (value, counts[value], counter)
 
     assert counter_sum > 0
+
+
+    # Removing the metadata
+    for value, operator in zip(values[:2], operators[:2]):
+        object_avu = ('=,%s' % attribute, '%s,%s' % (operator, value))
+        object_avu_remove = (attribute, value)
+
+        iterator = session.search.find(d, '*.xyz', types='f', debug=True,
+                                       object_avu=object_avu)
+
+        session.bulk.metadata(iterator, object_avu=object_avu_remove,
+                              action='remove', verbose=True)
+
+    # Checking that there are no more AVU matches
+    object_avu = ('=,%s' % attribute, '%s,%s' % (operators[2], values[2]))
+    iterator = session.search.find(d, '*.xyz', types='f', debug=True,
+                                   object_avu=object_avu)
+
+    counter = len([hit for hit in iterator])
+    assert counter == 0, counter
 
     remove_tmpdir(session, tmpdir)
     return
@@ -220,4 +242,4 @@ if __name__ == '__main__':
         test_remove(session, tmpdir)
         test_get(session, tmpdir)
         test_find(session, tmpdir)
-        test_add_metadata(session, tmpdir)
+        test_metadata(session, tmpdir)

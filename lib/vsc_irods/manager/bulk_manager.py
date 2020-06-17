@@ -176,15 +176,15 @@ class BulkManager(Manager):
                 self.session.data_objects.put(item, idest + '/',
                                               **put_options)
 
-    def add_metadata(self, iterator, recurse=False, collection_avu=[],
-                     object_avu=[], verbose=False):
-        """ Add metadata to iRODS data objects and/or collections.
+    def metadata(self, iterator, action='add', recurse=False, collection_avu=[],
+                 object_avu=[], verbose=False):
+        """ Add or remove metadata to iRODS data objects and/or collections.
 
         Examples:
 
-        >>> session.bulk.add_metadata('tmpdir*', recurse=True,
-                                      object_avu=('is_temporary_file',)),
-                                      collection_avu=('is_temporary_dir',))
+        >>> session.bulk.metadata('tmpdir*', action='add', recurse=True,
+                                   object_avu=('is_temporary_file',)),
+                                   collection_avu=('is_temporary_dir',))
 
         Arguments:
 
@@ -192,13 +192,31 @@ class BulkManager(Manager):
             Defines which items are subject to the bulk operation.
             Can be an iterator (e.g. using search_manager.find())
             or a string (which will be used to construct a
-            search_manager.iglob() iterator). Metadata will be added to
+            search_manager.iglob() iterator). Metadata will be modified for
             matching data objects and, if used recursively, collections.
+
+        action: str
+            The action to perform. Choose either 'add' or 'remove'.
+
+        collection_avu: tuple or list of tuples (default: [])
+            One or several attribute-value[-unit]] tuples to be modified
+            for collections.
+
+        object_avu: tuple or list of tuples (default: [])
+            One or several attribute-value[-unit]] tuples to be modified
+            for data objects.
 
         TODO: remaining arguments
         """
         if isinstance(iterator, str):
             iterator = self.session.search.iglob(iterator)
+
+        assert action in ['add', 'remove'], 'Unknown action: %s' % action
+
+        if action == 'add':
+            log_msg = 'Adding metadata {avu} to {kind} {path}'
+        else:
+            log_msg = 'Removing metadata {avu} from {kind} {path}'
 
         if isinstance(object_avu, tuple): object_avu = [object_avu]
         if isinstance(collection_avu, tuple): collection_avu = [collection_avu]
@@ -208,22 +226,35 @@ class BulkManager(Manager):
 
             if self.session.collections.exists(path):
                 # Item is a collection, not an object
+                kind = 'collection'
+
                 if recurse:
                     for avu in collection_avu:
-                        self.log('Adding metadata to collection %s' % path,
+                        self.log(log_msg.format(avu=avu, kind=kind, path=path),
                                  verbose)
-                        meta = iRODSMeta(*avu)
-                        self.session.metadata.set(Collection, path, meta)
 
-                    self.add_metadata(item + '/*', recurse=True,
-                                      collection_avu=collection_avu,
-                                      object_avu=object_avu,
-                                      verbose=verbose)
+                        meta = iRODSMeta(*avu)
+                        if action == 'add':
+                            self.session.metadata.set(Collection, path, meta)
+                        elif action == 'remove':
+                            self.session.metadata.remove(Collection, path, meta)
+
+                    self.metadata(item + '/*', action, recurse=True,
+                                  collection_avu=collection_avu,
+                                  object_avu=object_avu,
+                                  verbose=verbose)
                 else:
                     self.log('Skipping collection %s (no recursion)' % item,
                              verbose)
             else:
+                kind = 'data object'
+
                 for avu in object_avu:
-                    self.log('Adding metadata to object %s' % path, verbose)
+                    self.log(log_msg.format(avu=str(avu), kind=kind, path=path),
+                             verbose)
+
                     meta = iRODSMeta(*avu)
-                    self.session.metadata.set(DataObject, path, meta)
+                    if action == 'add':
+                        self.session.metadata.set(DataObject, path, meta)
+                    elif action == 'remove':
+                        self.session.metadata.remove(DataObject, path, meta)

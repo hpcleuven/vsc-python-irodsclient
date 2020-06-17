@@ -85,7 +85,7 @@ class SearchManager(Manager):
         Arguments:
 
         irods_path: str (default: '.')
-            Root of the directory tree in which to search
+            Root of the iRODS collection tree in which to search
 
         pattern: str (default: '*')
             The search pattern

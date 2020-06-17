@@ -26,11 +26,17 @@ find $local_tmpdir
 echo "Removing local tmpdir "$local_tmpdir
 rm -r $local_tmpdir
 
-# Add and remove metadata to certain files ...
+# Add metadata to certain files
 echo "TEST: bulk-imeta (add)"
 bulk-imeta $irods_path"/data/molec*/c*.xyz" --object_avu=Kind,organic \
            --action=add --verbose
 
+# Try to find these files using search-find with an AVU filter
+echo "TEST: search-find"
+search-find $irods_path"/data/molecules/" --object_avu="=,kind;like,%org%" \
+            --types=f --debug
+
+# Remove that same metadata
 echo "TEST: bulk-imeta (remove)"
 bulk-imeta $irods_path"/data/molec*/c*.xyz" --object_avu=Kind,organic \
            --action=remove --verbose

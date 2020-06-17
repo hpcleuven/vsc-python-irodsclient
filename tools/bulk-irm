@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from vsc_irods.session import VSCiRODSSession
 
 
@@ -10,7 +10,8 @@ Example:
 bulk-irm -r "~/data/molec*" "~/data/README" --interactive --verbose
 """
 
-arg_parser = ArgumentParser(description=desc)
+arg_parser = ArgumentParser(description=desc,
+                            formatter_class=RawDescriptionHelpFormatter)
 
 arg_parser.add_argument('args', nargs='*',
                         help='glob pattern(s) for iRODS files and directories '

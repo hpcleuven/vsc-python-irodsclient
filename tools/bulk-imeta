@@ -1,18 +1,19 @@
 #!/usr/bin/env python
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from vsc_irods.session import VSCiRODSSession
 
 
 desc = """imeta-like command using the VSC Python iRODS client
 
-Example:
+Examples:
 
 bulk-imeta "~/data/molec*/c*.xyz" --object_avu=Kind,organic --verbose
 bulk-imeta "~/data/*.txt" --object_avu=creator,username --action=remove
 bulk-imeta -r /tempZone/home/username/tmp/ --collection_avu='tempdir'
 """
 
-arg_parser = ArgumentParser(description=desc)
+arg_parser = ArgumentParser(description=desc,
+                            formatter_class=RawDescriptionHelpFormatter)
 
 arg_parser.add_argument('args', nargs='*',
                         help='glob pattern(s) for iRODS files and directories '

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from vsc_irods.session import VSCiRODSSession
 
 
@@ -11,7 +11,8 @@ Example:
 search-find "~/data/" --object_avu="=,Kind;like,%org%" --types=f
 """
 
-arg_parser = ArgumentParser(description=desc)
+arg_parser = ArgumentParser(description=desc,
+                            formatter_class=RawDescriptionHelpFormatter)
 
 arg_parser.add_argument('arg', nargs='?', default='.',
                         help='Root of the iRODS collection tree in which to '

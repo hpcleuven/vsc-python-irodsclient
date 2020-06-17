@@ -52,7 +52,7 @@ class SearchManager(Manager):
 
             if (self.session.data_objects.exists(path) or
                 self.session.collections.exists(path)):
-                yield pattern
+                yield pattern.rstrip('/')
             else:
                 yield
         else:

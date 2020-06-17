@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+from argparse import ArgumentParser
+from vsc_irods.session import VSCiRODSSession
+
+
+desc = """iput-like command using the VSC Python iRODS client
+
+Example:
+
+bulk-iput -r ./test/data* --destination="~/" --verbose
+"""
+
+arg_parser = ArgumentParser(description=desc)
+
+arg_parser.add_argument('args', nargs='*',
+                        help='glob pattern for local files and directories '
+                        'to be copied to iRODS')
+
+arg_parser.add_argument('-d', '--destination', default='.',
+                        help='The destination path on the iRODS file system. '
+                        'Default: irods_cwd, as defined in environments.json')
+
+arg_parser.add_argument('-r', '--recurse', action='store_true',
+                        help='Turns on recursion')
+
+arg_parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Increases the verbosity level')
+
+options = arg_parser.parse_args()
+
+
+with VSCiRODSSession(txt='-') as session:
+    for arg in options.args:
+        session.bulk.put(arg, irods_path=options.destination,
+                         recurse=options.recurse,
+                         verbose=options.verbose)

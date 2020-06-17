@@ -13,5 +13,7 @@ Dependencies
 Installation
 ============
 
-* Clone or download and add the `lib` folder to your `$PYTHONPATH`
+* Clone or download from GitHub
+* Add the `lib` folder to your `$PYTHONPATH`
+* Add the `tools` folder to your `$PATH`
 * Run the tests in the `test` folder

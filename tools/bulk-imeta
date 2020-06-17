@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+from argparse import ArgumentParser
+from vsc_irods.session import VSCiRODSSession
+
+
+desc = """imeta-like command using the VSC Python iRODS client
+
+Example:
+
+bulk-imeta "~/data/molec*/c*.xyz" --object_avu=Kind,organic --verbose
+bulk-imeta "~/data/*.txt" --object_avu=creator,username --action=remove
+bulk-imeta -r /tempZone/home/username/tmp/ --collection_avu='tempdir'
+"""
+
+arg_parser = ArgumentParser(description=desc)
+
+arg_parser.add_argument('args', nargs='*',
+                        help='glob pattern(s) for iRODS files and directories '
+                        'for which metadata will be added. '
+                        'Note that, when including asterisks or a tilde in '
+                        'in a pattern, the pattern needs to be enclosed in '
+                        'quotes to avoid shell expansion to local paths.')
+
+arg_parser.add_argument('--action', default='add',
+                        help='The action to perform. Choose either "add" or '
+                        '"remove"')
+
+arg_parser.add_argument('--collection_avu', default='',
+                        help='AVU tuple to be added to the matching '
+                        'collections, in the form of a comma-separated '
+                        'AttName[,AttValue[,AttUnits]] list')
+
+arg_parser.add_argument('--object_avu', default='',
+                        help='AVU tuple to be added to the matching '
+                        'data objects, in the form of a comma-separated '
+                        'AttName[,AttValue[,AttUnits]] list')
+
+arg_parser.add_argument('-r', '--recurse', action='store_true',
+                        help='Turns on recursion')
+
+arg_parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Increases the verbosity level')
+
+options = arg_parser.parse_args()
+
+
+with VSCiRODSSession(txt='-') as session:
+    collection_avu = tuple(options.collection_avu.split(','))
+    object_avu = tuple(options.object_avu.split(','))
+
+    for arg in options.args:
+        session.bulk.metadata(arg, action=options.action,
+                              collection_avu=collection_avu,
+                              object_avu=object_avu,
+                              recurse=options.recurse,
+                              verbose=options.verbose)

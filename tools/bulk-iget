@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+from argparse import ArgumentParser
+from vsc_irods.session import VSCiRODSSession
+
+
+desc = """iget-like command using the VSC Python iRODS client
+
+Example:
+
+bulk-iget -r ./data/molecules/ -d . --verbose
+"""
+
+arg_parser = ArgumentParser(description=desc)
+
+arg_parser.add_argument('args', nargs='*',
+                        help='glob pattern(s) for iRODS files and directories '
+                        'to be copied to the local file system. '
+                        'Note that, when including asterisks or a tilde in '
+                        'in a pattern, the pattern needs to be enclosed in '
+                        'quotes to avoid shell expansion to local paths.')
+
+arg_parser.add_argument('-d', '--destination', default='.',
+                        help='The destination path on the local file system. '
+                        'Defaults to the current working directory.')
+
+arg_parser.add_argument('-r', '--recurse', action='store_true',
+                        help='Turns on recursion')
+
+arg_parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Increases the verbosity level')
+
+options = arg_parser.parse_args()
+
+
+with VSCiRODSSession(txt='-') as session:
+    for arg in options.args:
+        session.bulk.get(arg, local_path=options.destination,
+                         recurse=options.recurse,
+                         verbose=options.verbose)

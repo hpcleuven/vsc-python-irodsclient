@@ -103,11 +103,11 @@ class SearchManager(Manager):
             * 'f' for files (i.e. data objects)
 
         collection_avu: tuple or list of tuples (default: [])
-            One or several attribute-value-unit patterns to be used
+            One or several attribute[-value[-unit]] patterns to be used
             in filtering collections.
 
         object_avu: tuple or list of tuples (default: [])
-            One or several attribute-value-unit patterns to be used
+            One or several attribute[-value[-unit]] patterns to be used
             in filtering data objects.
 
 		debug: bool (default: False)

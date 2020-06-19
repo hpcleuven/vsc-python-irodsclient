@@ -1,5 +1,6 @@
 import os
 import glob
+from irods.keywords import FORCE_FLAG_KW
 from irods.meta import iRODSMeta
 from irods.models import Collection, DataObject
 from vsc_irods.manager import Manager
@@ -16,8 +17,8 @@ def confirm(operation, kind, item):
 class BulkManager(Manager):
     """ A class for easier 'bulk' operations with the iRODS file system """
 
-    def remove(self, iterator, recurse=False, remove_options={},
-               unlink_options={}, prompt=False, verbose=False):
+    def remove(self, iterator, recurse=False, force=False, prompt=False,
+               verbose=False, **options):
         """ Remove iRODS data objects and/or collections,
         in a manner that resembles the UNIX 'rm' command.
 
@@ -35,6 +36,14 @@ class BulkManager(Manager):
             search_manager.iglob() iterator). Matching data objects
             (and, if used recursively, collections) will be removed.
 
+        force: bool (default: False)
+            Whether to imediately remove the collections or data objects,
+            without putting them in the trash.
+
+        options: (any remaining keywords arguments)
+            Additional options to be passed on to PRC's remove()
+            and unlink() methods.
+
         TODO: remaining arguments
         """
         if isinstance(iterator, str):
@@ -51,7 +60,7 @@ class BulkManager(Manager):
                     if ok:
                         self.log('Removing collection %s' % path, verbose)
                         self.session.collections.remove(path, recurse=True,
-                                                        **remove_options)
+                                                        force=force, **options)
                 else:
                     self.log('Skipping collection %s (no recursion)' % item,
                              verbose)
@@ -59,10 +68,11 @@ class BulkManager(Manager):
                 ok = confirm('remove', 'object', path) if prompt else True
                 if ok:
                     self.log('Removing object %s' % path, verbose)
-                    self.session.data_objects.unlink(path, **unlink_options)
+                    self.session.data_objects.unlink(path, force=force,
+                                                     **options)
 
-    def get(self, iterator, local_path='.', recurse=False, get_options={},
-            return_data_objects=False, verbose=False):
+    def get(self, iterator, local_path='.', recurse=False, force=False,
+            return_data_objects=False, verbose=False, **options):
         """ Copy iRODS data objects and/or collections to the local machine.
 
         Examples:
@@ -79,6 +89,12 @@ class BulkManager(Manager):
             search_manager.iglob() iterator). Matching data objects
             (and, if used recursively, collections) will be copied
             to the local machine.
+
+        force: bool (default: False)
+            Whether to overwrite existing local files.
+
+        options: (any remaining keywords arguments)
+            Additional options to be passed on to PRC's get() method.
 
         TODO: remaining arguments
         """
@@ -103,9 +119,8 @@ class BulkManager(Manager):
                         os.mkdir(d)
 
                     self.get(item + '/*', local_path=d, recurse=True,
-                             get_options=get_options,
                              return_data_objects=return_data_objects,
-                             verbose=verbose)
+                             verbose=verbose, force=force, **options)
                 else:
                     self.log('Skipping collection %s (no recursion)' % item,
                              verbose)
@@ -117,13 +132,15 @@ class BulkManager(Manager):
                              (path, local_path), verbose)
 
                 f = None if return_data_objects else local_path
-                obj = self.session.data_objects.get(path, file=f, **get_options)
+                extra_options = {FORCE_FLAG_KW: ''} if force else {}
+                obj = self.session.data_objects.get(path, file=f, **options,
+                                                    **extra_options)
                 objects.append(obj)
 
         return objects if return_data_objects else None
 
-    def put(self, iterator, irods_path='.', recurse=False, create_options={},
-            put_options={}, verbose=False):
+    def put(self, iterator, irods_path='.', recurse=False, force=False,
+            create_options={}, verbose=False, **options):
         """ Copy local files and/or folders to the iRODS server,
         in a manner that resembles the UNIX 'cp' command.
 
@@ -141,6 +158,12 @@ class BulkManager(Manager):
             in search_manager.iglob() iterator). Matching files on the
             local machine (and, if used recursively, directories) will
             be copied to the iRODS server.
+
+        force: bool (default: False)
+            Whether to overwrite existing data objects.
+
+        options: (any remaining keywords arguments)
+            Additional options to be passed on to PRC's put() method.
 
         TODO: remaining arguments
         """
@@ -164,8 +187,8 @@ class BulkManager(Manager):
                                                         **create_options)
 
                     self.put(item + '/*', irods_path=d, recurse=True,
-                             create_options=create_options,
-                             put_options=put_options, verbose=verbose)
+                             force=force, create_options=create_options,
+                             verbose=verbose, **options)
                 else:
                     self.log('Skipping collection %s (no recursion)' % item,
                              verbose)
@@ -173,8 +196,8 @@ class BulkManager(Manager):
             elif os.path.isfile(item):
                 self.log('Putting object %s in collection %s' % \
                          (item, idest), verbose)
-                self.session.data_objects.put(item, idest + '/',
-                                              **put_options)
+                self.session.data_objects.put(item, idest + '/', force=force,
+                                              **options)
 
     def metadata(self, iterator, action='add', recurse=False, collection_avu=[],
                  object_avu=[], verbose=False):

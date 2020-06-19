@@ -13,7 +13,7 @@ from vsc_irods.session import VSCiRODSSession
 def create_tmpdir(session, tmpdir):
     path = session.path.get_absolute_irods_path(tmpdir)
     assert not session.collections.exists(path)
-    session.collections.create(path, recurse=True)
+    session.path.imkdir(tmpdir)
     return
 
 
@@ -46,6 +46,41 @@ def test_absolute_paths(session, tmpdir):
         d = template % os.path.basename(tmpdir) if '%' in template else template
         assert hit == session.path.get_absolute_irods_path(d), (hit, d)
     session.path.ichdir('~')
+
+    remove_tmpdir(session, tmpdir)
+    return
+
+
+def test_imkdir(session, tmpdir):
+    create_tmpdir(session, tmpdir)
+
+    # This is not supposed to work
+    try:
+        session.path.imkdir(tmpdir, verbose=True)
+    except AssertionError:
+        pass
+    else:
+        msg = 'Trying to create an already existing collection is expected '
+        msg += 'to raise an AssertionError'
+        raise RuntimeError(msg)
+
+    nested_dir = os.path.join(tmpdir, 'nested/directory')
+
+    # This is not supposed to work either
+    try:
+        session.path.imkdir(nested_dir, recurse=False, verbose=True)
+    except AssertionError:
+        pass
+    else:
+        msg = 'Trying to create a collection where the parent does not exist '
+        msg += 'and recurse=False is expected to raise an AssertionError'
+        raise RuntimeError(msg)
+
+    # But this should work though
+    session.path.imkdir(nested_dir, recurse=True, verbose=True)
+
+    abs_path = session.path.get_absolute_irods_path(nested_dir)
+    assert session.collections.exists(abs_path)
 
     remove_tmpdir(session, tmpdir)
     return
@@ -238,6 +273,7 @@ if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
         test_absolute_paths(session, tmpdir)
+        test_imkdir(session, tmpdir)
         test_put(session, tmpdir)
         test_remove(session, tmpdir)
         test_get(session, tmpdir)

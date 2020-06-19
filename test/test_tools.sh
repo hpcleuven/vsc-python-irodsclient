@@ -1,11 +1,11 @@
 # Basic tests of the command line scripts in /tools/
 
-# Change to iRODS home directory
+# Change to iRODS home
 icd
 
 # Make collection for testing purposes
 tmpdir=".irodstest"
-echo "Making test directory "$tmpdir
+echo "Making test collection "$tmpdir
 imkdir $tmpdir
 icd $tmpdir
 irods_path="~/"$tmpdir
@@ -45,7 +45,7 @@ bulk-imeta $irods_path"/data/molec*/c*.xyz" --object_avu=Kind,organic \
 echo "TEST: bulk-irm"
 bulk-irm -r $irods_path"/data/" --verbose
 
-# Remove the now-empty test directory
-echo "Removing test directory "$tmpdir
+# Remove the now-empty test collection
+echo "Removing test collection "$tmpdir
 icd
 irmdir $tmpdir

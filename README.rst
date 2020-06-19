@@ -21,8 +21,10 @@ Installation
 ============
 
 * Clone or download from GitHub
-* Add the `lib` folder to your `$PYTHONPATH`
-* Add the `tools` folder to your `$PATH`
+* Set the `$VSC_PRC_ROOT` environment variable to the location of VSC-PRC's
+  root directory
+* Add the `$VSC_PRC_ROOT/lib` directory to your `$PYTHONPATH`
+* Add the `$VSC_PRC_ROOT/tools` directory to your `$PATH`
 * Run the tests in the `test` folder
 
 

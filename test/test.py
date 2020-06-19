@@ -13,14 +13,14 @@ from vsc_irods.session import VSCiRODSSession
 def create_tmpdir(session, tmpdir):
     path = session.path.get_absolute_irods_path(tmpdir)
     assert not session.collections.exists(path)
-    session.path.imkdir(tmpdir)
+    session.path.imkdir(tmpdir, verbose=True)
     return
 
 
 def remove_tmpdir(session, tmpdir):
     path = session.path.get_absolute_irods_path(tmpdir)
     assert session.collections.exists(path)
-    session.collections.remove(path, recurse=True)
+    session.bulk.remove(tmpdir, recurse=True, force=True, verbose=True)
     return
 
 
@@ -95,6 +95,10 @@ def test_put(session, tmpdir):
 
     session.bulk.put('data/molec*', irods_path=tmpdir, recurse=True,
                      verbose=True)
+
+    session.bulk.put('data/molec*', irods_path=tmpdir, recurse=True,
+                     force=True, verbose=True)
+
     hits = session.search.glob(tmpdir + '/molec*', debug=True)
     expected = ['%s/molecules' % tmpdir, '%s/molecule_names.txt' % tmpdir]
     assert all([hit in expected for hit in hits]), hits
@@ -119,7 +123,7 @@ def test_remove(session, tmpdir):
     hits = session.search.glob(tmpdir + '/*', debug=True)
     assert hits == [testdir], (hits, testdir)
 
-    session.bulk.remove(testdir, verbose=True)
+    session.bulk.remove(testdir, force=True, verbose=True)
     hits = session.search.glob(tmpdir + '/*', debug=True)
     assert hits == [testdir], (hits, testdir)
 
@@ -146,6 +150,8 @@ def test_get(session, tmpdir):
         print('Using temporary test directory:', tmpdest)
         session.bulk.get(testdir, local_path=tmpdest, recurse=True,
                          verbose=True)
+        session.bulk.get(testdir, local_path=tmpdest, recurse=True,
+                         force=True, verbose=True)
         d = os.path.join(tmpdest, os.path.basename(testdir))
         assert os.path.isdir(d)
         f = os.path.join(d, os.path.basename(testfile))

@@ -8,7 +8,7 @@ VSC Python iRODS client
 
 Example:
 
-search-find "~/data/" --object_avu="=,Kind;like,%org%" --types=f
+vsc-prc-find "~/data/" --object_avu="=,Kind;like,%org%" --types=f
 """
 
 arg_parser = ArgumentParser(description=desc,

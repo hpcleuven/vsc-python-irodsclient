@@ -7,7 +7,7 @@ desc = """iput-like command using the VSC Python iRODS client
 
 Example:
 
-bulk-iput -r ./test/data* --destination="~/" --verbose
+vsc-prc-iput -r ./test/data* --destination="~/" --verbose
 """
 
 arg_parser = ArgumentParser(description=desc,

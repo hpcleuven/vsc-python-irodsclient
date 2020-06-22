@@ -7,9 +7,9 @@ desc = """imeta-like command using the VSC Python iRODS client
 
 Examples:
 
-bulk-imeta "~/data/molec*/c*.xyz" --object_avu=Kind,organic --verbose
-bulk-imeta "~/data/*.txt" --object_avu=creator,username --action=remove
-bulk-imeta -r /tempZone/home/username/tmp/ --collection_avu='tempdir'
+vsc-prc-imeta "~/data/molec*/c*.xyz" --object_avu=Kind,organic --verbose
+vsc-prc-imeta "~/data/*.txt" --object_avu=creator,username --action=remove
+vsc-prc-imeta -r /tempZone/home/username/tmp/ --collection_avu='tempdir'
 """
 
 arg_parser = ArgumentParser(description=desc,

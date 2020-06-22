@@ -3,11 +3,11 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from vsc_irods.session import VSCiRODSSession
 
 
-desc = """irm-like command using the VSC Python iRODS client
+desc = """iget-like command using the VSC Python iRODS client
 
 Example:
 
-bulk-irm -r "~/data/molec*" "~/data/README" --interactive --verbose
+vsc-prc-iget -r ./data/molecules/ -d . --verbose
 """
 
 arg_parser = ArgumentParser(description=desc,
@@ -15,20 +15,20 @@ arg_parser = ArgumentParser(description=desc,
 
 arg_parser.add_argument('args', nargs='*',
                         help='glob pattern(s) for iRODS files and directories '
-                        'to be removed. '
+                        'to be copied to the local file system. '
                         'Note that, when including asterisks or a tilde in '
                         'in a pattern, the pattern needs to be enclosed in '
                         'quotes to avoid shell expansion to local paths.')
 
-arg_parser.add_argument('-i', '--interactive', action='store_true',
-                        help='Switch to an "interactive" mode where you will '
-                        'be asked for confirmation before any removal')
+arg_parser.add_argument('-d', '--destination', default='.',
+                        help='The destination path on the local file system. '
+                        'Defaults to the current working directory.')
 
 arg_parser.add_argument('-r', '--recurse', action='store_true',
                         help='Turns on recursion')
 
 arg_parser.add_argument('-f', '--force', action='store_true',
-                        help='Complete removal, instead of sending to trash')
+                        help='Force the overwriting of existing local files')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
                         help='Increases the verbosity level')
@@ -38,7 +38,7 @@ options = arg_parser.parse_args()
 
 with VSCiRODSSession(txt='-') as session:
     for arg in options.args:
-        session.bulk.remove(arg, prompt=options.interactive,
-                            recurse=options.recurse,
-                            force=options.force,
-                            verbose=options.verbose)
+        session.bulk.get(arg, local_path=options.destination,
+                         recurse=options.recurse,
+                         force=options.force,
+                         verbose=options.verbose)

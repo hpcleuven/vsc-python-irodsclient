@@ -34,7 +34,7 @@ vsc-prc-imeta $irods_path"/data/molec*/c*.xyz" --object_avu=Kind,organic \
 # Try to find these files using vsc-prc-find with an AVU filter
 echo "TEST: vsc-prc-find"
 vsc-prc-find $irods_path"/data/molecules/" --name="c*.xyz" \
-             --object_avu="=,kind;like,%org%" --types=f --debug
+             --object_avu="kind;like,%org%" --types=f --debug
 
 # Remove that same metadata
 echo "TEST: vsc-prc-imeta (remove)"

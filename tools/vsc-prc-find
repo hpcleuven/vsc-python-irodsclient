@@ -8,7 +8,8 @@ VSC Python iRODS client
 
 Example:
 
-vsc-prc-find "~/data/" --name="*.xyz" --object_avu="=,Kind;like,%org%" --types=f
+vsc-prc-find "~/data/" --name="*.xyz" --object_avu="=,Kind;like,%org%"
+vsc-prc-find "~/data/" --name="*.out" --object_avu="Machine;=,Cray-XC40"
 """
 
 arg_parser = ArgumentParser(description=desc,
@@ -37,14 +38,18 @@ arg_parser.add_argument('--wholename', default='',
                         'quotes to avoid shell expansion to local paths.')
 
 arg_parser.add_argument('--collection_avu', default='',
-                        help='AVU tuple to be added to the matching '
-                        'collections, in the form of a comma-separated '
-                        'AttName[,AttValue[,AttUnits]] list')
+                        help='AVU tuple pattern to be used to filter the '
+                        'collections, in the form of semicolon-separated '
+                        '[Operator,]Key list, i.e. [Operator,]AttName'
+                        '[;[Operator,]AttValue[;[Operator,]AttUnits]]. '
+                        'If no Operator is supplied, the default "=" is used.')
 
 arg_parser.add_argument('--object_avu', default='',
-                        help='AVU tuple to be added to the matching '
-                        'data objects, in the form of a comma-separated '
-                        'AttName[,AttValue[,AttUnits]] list')
+                        help='AVU tuple pattern to be used to filter the '
+                        'data objects, in the form of semicolon-separated '
+                        '[Operator,]Key list, i.e. [Operator,]AttName'
+                        '[;[Operator,]AttValue[;[Operator,]AttUnits]]. '
+                        'If no Operator is supplied, the default "=" is used.')
 
 arg_parser.add_argument('-t', '--types', default='d,f',
                         help='Comma-separated list of one or more of the '

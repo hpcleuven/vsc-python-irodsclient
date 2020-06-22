@@ -8,7 +8,7 @@ VSC Python iRODS client
 
 Example:
 
-vsc-prc-find "~/data/" --object_avu="=,Kind;like,%org%" --types=f
+vsc-prc-find "~/data/" --name="*.xyz" --object_avu="=,Kind;like,%org%" --types=f
 """
 
 arg_parser = ArgumentParser(description=desc,
@@ -17,6 +17,21 @@ arg_parser = ArgumentParser(description=desc,
 arg_parser.add_argument('arg', nargs='?', default='.',
                         help='Root of the iRODS collection tree in which to '
                         'search '
+                        'Note that, when including asterisks or a tilde in '
+                        'in a pattern, the pattern needs to be enclosed in '
+                        'quotes to avoid shell expansion to local paths.')
+
+arg_parser.add_argument('-n', '--name', default='',
+                        help='glob pattern(s) for the basenames of iRODS '
+                        'collections and data objects in the search tree. '
+                        'Note that, when including asterisks or a tilde in '
+                        'in a pattern, the pattern needs to be enclosed in '
+                        'quotes to avoid shell expansion to local paths.')
+
+arg_parser.add_argument('--wholename', default='',
+                        help='glob pattern(s) for the whole names (which may '
+                        'hence include slashes) of iRODS collections and '
+                        'data objects in the search tree. '
                         'Note that, when including asterisks or a tilde in '
                         'in a pattern, the pattern needs to be enclosed in '
                         'quotes to avoid shell expansion to local paths.')
@@ -51,7 +66,18 @@ with VSCiRODSSession(txt='-') as session:
     collection_avu = parse_avu_string(options.collection_avu)
     object_avu = parse_avu_string(options.object_avu)
 
+    use_wholename = len(options.wholename) > 0
+
+    if use_wholename:
+        assert len(options.name) == 0, \
+               'Use either --name or --wholename, but not both'
+        pattern = wholename
+    else:
+        pattern = options.name if len(options.name) > 0 else '*'
+
     iterator = session.search.find(irods_path=options.arg,
+                                   pattern=pattern,
+                                   use_wholename=use_wholename,
                                    collection_avu=collection_avu,
                                    object_avu=object_avu,
                                    types=options.types,

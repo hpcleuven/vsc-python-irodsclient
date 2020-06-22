@@ -76,7 +76,7 @@ with VSCiRODSSession(txt='-') as session:
     if use_wholename:
         assert len(options.name) == 0, \
                'Use either --name or --wholename, but not both'
-        pattern = wholename
+        pattern = options.wholename
     else:
         pattern = options.name if len(options.name) > 0 else '*'
 

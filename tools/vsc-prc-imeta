@@ -26,12 +26,12 @@ arg_parser.add_argument('--action', default='add',
                         help='The action to perform. Choose either "add" or '
                         '"remove"')
 
-arg_parser.add_argument('--collection_avu', default='',
+arg_parser.add_argument('--collection_avu', action='append',
                         help='AVU tuple to be added to the matching '
                         'collections, in the form of a comma-separated '
                         'AttName[,AttValue[,AttUnits]] list')
 
-arg_parser.add_argument('--object_avu', default='',
+arg_parser.add_argument('--object_avu', action='append',
                         help='AVU tuple to be added to the matching '
                         'data objects, in the form of a comma-separated '
                         'AttName[,AttValue[,AttUnits]] list')
@@ -46,8 +46,10 @@ options = arg_parser.parse_args()
 
 
 with VSCiRODSSession(txt='-') as session:
-    collection_avu = tuple(options.collection_avu.split(','))
-    object_avu = tuple(options.object_avu.split(','))
+    collection_avu = [] if options.collection_avu is None else \
+                     [tuple(avu.split(',')) for avu in options.collection_avu]
+    object_avu = [] if options.object_avu is None else \
+                 [tuple(avu.split(',')) for avu in options.object_avu]
 
     for arg in options.args:
         session.bulk.metadata(arg, action=options.action,

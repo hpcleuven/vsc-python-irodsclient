@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from vsc_irods.session import VSCiRODSSession
+
+
+desc = """imkdir-like command using the VSC Python iRODS client
+
+Example:
+
+vsc-prc-imkdir -p "~/data/molecules"
+"""
+
+arg_parser = ArgumentParser(description=desc,
+                            formatter_class=RawDescriptionHelpFormatter)
+
+arg_parser.add_argument('args', nargs='*',
+                        help='iRODS collections path(s) to be created. '
+                        'Note that, when including asterisks or a tilde in '
+                        'in a pattern, the pattern needs to be enclosed in '
+                        'quotes to avoid shell expansion to local paths.')
+
+arg_parser.add_argument('-p', '--parents', action='store_true',
+                        help='Make parent directories as needed')
+
+arg_parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Increases the verbosity level')
+
+options = arg_parser.parse_args()
+
+
+with VSCiRODSSession(txt='-') as session:
+    for arg in options.args:
+        session.path.imkdir(arg, parents=options.parents,
+                            verbose=options.verbose)

@@ -5,10 +5,10 @@ icd
 
 # Make collection for testing purposes
 tmpdir=".irodstest"
-echo "Making test collection "$tmpdir
-imkdir $tmpdir
-icd $tmpdir
 irods_path="~/"$tmpdir
+echo "Making test collection "$irods_path
+vsc-prc-imkdir $irods_path
+icd $tmpdir
 
 # Copy content to iRODS
 echo "TEST: vsc-prc-iput"

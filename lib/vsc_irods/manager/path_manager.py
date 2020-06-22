@@ -66,18 +66,18 @@ class PathManager(Manager):
         abs_path = os.path.normpath(abs_path)
         return abs_path
 
-    def imkdir(self, path, recurse=False, verbose=False, **options):
+    def imkdir(self, path, parents=False, verbose=False, **options):
         """ Creates a collection on the iRODS file system """
         abs_path = self.get_absolute_irods_path(path)
 
         assert not self.session.collections.exists(abs_path), \
             'Cannot create %s: collection already exists' % abs_path
 
-        if not recurse:
+        if not parents:
             msg = 'Cannot create collection %s because the parent '
-            msg += 'colllection does not exist and recurse=False'
+            msg += 'colllection does not exist and parents=False'
             dirname = os.path.dirname(abs_path)
             assert self.session.collections.exists(dirname), msg % abs_path
 
         self.log('Creating collection %s' % abs_path, verbose)
-        self.session.collections.create(abs_path, recurse=recurse, **options)
+        self.session.collections.create(abs_path, recurse=parents, **options)

@@ -68,7 +68,7 @@ def test_imkdir(session, tmpdir):
 
     # This is not supposed to work either
     try:
-        session.path.imkdir(nested_dir, recurse=False, verbose=True)
+        session.path.imkdir(nested_dir, parents=False, verbose=True)
     except AssertionError:
         pass
     else:
@@ -77,7 +77,7 @@ def test_imkdir(session, tmpdir):
         raise RuntimeError(msg)
 
     # But this should work though
-    session.path.imkdir(nested_dir, recurse=True, verbose=True)
+    session.path.imkdir(nested_dir, parents=True, verbose=True)
 
     abs_path = session.path.get_absolute_irods_path(nested_dir)
     assert session.collections.exists(abs_path)

@@ -6,6 +6,12 @@ from irods.models import Collection, DataObject
 from vsc_irods.manager import Manager
 
 
+# Job-related environment variables used by add_job_metadata
+job_env_var = ['PBS_O_HOST', 'PBS_JOBID', 'PBS_JOBNAME', 'PBS_NODEFILE',
+               'SLURM_SUBMIT_HOST', 'SLURM_JOB_ID', 'SLURM_JOB_NAME',
+               'SLURM_JOB_NODELIST']
+
+
 def confirm(operation, kind, item):
     """ Prompts the users to confirm the given operation """
     answer = None
@@ -281,3 +287,41 @@ class BulkManager(Manager):
                         self.session.metadata.set(DataObject, path, meta)
                     elif action == 'remove':
                         self.session.metadata.remove(DataObject, path, meta)
+
+    def add_job_metadata(self, iterator, recurse=False, verbose=False):
+        """ Add job-related metadata to selected data objects and collections.
+
+        Examples:
+
+        >>> session.bulk.add_job_metadata('~/data/out*.txt')
+
+        Arguments:
+
+        iterator: iterator or str
+            Defines which items are subject to the bulk operation.
+            Can be an iterator (e.g. using search_manager.find())
+            or a string (which will be used to construct a
+            search_manager.iglob() iterator). Job metadata will be added for
+            matching data objects and, if used recursively, collections.
+
+        TODO: remaining arguments
+        """
+        # Gather job-related information from available environment variables
+        avus = []
+        for key in job_env_var:
+            if key in os.environ:
+                if key.endswith('FILE'):
+                    # e.g. $PBS_NODEFILE is special, as it refers to a file
+                    with open(os.environ[key], 'r') as f:
+                        value = ','.join([line.strip() for line in f])
+
+                    listkey = key.replace('FILE', 'LIST')
+                    avus.append((listkey, value))
+                else:
+                    avus.append((key, os.environ[key]))
+
+        self.metadata(iterator, action='add',
+                      collection_avu=avus,
+                      object_avu=avus,
+                      recurse=recurse,
+                      verbose=verbose)

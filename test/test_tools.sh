@@ -41,6 +41,17 @@ echo "TEST: vsc-prc-imeta (remove)"
 vsc-prc-imeta $irods_path"/data/molec*/c*.xyz" --object_avu=Kind,organic \
            --action=remove --verbose
 
+# Add dummy job metadata
+echo "TEST: vsc-prc-add-job-metadata"
+export PBS_JOBID=666
+export PBS_O_HOST=login1
+export PBS_JOBNAME=dummyjob
+export PBS_NODEFILE=`mktemp`
+echo r012345 >> $PBS_NODEFILE
+echo r678910 >> $PBS_NODEFILE
+vsc-prc-add-job-metadata $irods_path"/data/README" --recurse --verbose
+rm $PBS_NODEFILE
+
 # Remove all the uploaded content
 echo "TEST: vsc-prc-irm"
 vsc-prc-irm -r $irods_path"/data/" --verbose

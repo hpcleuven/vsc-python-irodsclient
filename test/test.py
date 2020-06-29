@@ -275,6 +275,60 @@ def test_metadata(session, tmpdir):
     return
 
 
+def test_add_job_metadata(session, tmpdir):
+    create_tmpdir(session, tmpdir)
+
+    from vsc_irods.manager.bulk_manager import job_env_var
+
+    # Create 'output' file
+    f = os.path.join(tmpdir, 'outputfile.txt')
+    f_abs = session.path.session.path.get_absolute_irods_path(f)
+    session.data_objects.create(f_abs)
+
+    # Generate dummy job environment variables
+    filelist = 'abc,def'
+    tmp_fhandles = {}
+
+    for key in job_env_var:
+        assert key not in os.environ
+
+        if key.endswith('FILE'):
+            fhandle = tempfile.NamedTemporaryFile(mode='w')
+            print('Using local tmp file %s for key %s' % (fhandle.name, key))
+
+            for line in filelist.split(','):
+                fhandle.write(line + '\n')
+
+            fhandle.flush()
+            os.environ[key] = fhandle.name
+            tmp_fhandles[key] = fhandle
+        else:
+            os.environ[key] = key.lower()
+
+    # Add them to the output file
+    session.bulk.add_job_metadata(f, verbose=True)
+
+    # Check that all job environment variables are present
+    obj = session.data_objects.get(f_abs)
+
+    for key in job_env_var:
+        print('Checking key', key)
+
+        if key.endswith('FILE'):
+            listkey = key.replace('FILE', 'LIST')
+            value = obj.metadata.get_one(listkey).value
+            assert value == filelist, (value, filelist)
+            tmp_fhandles[key].close()
+        else:
+            value = obj.metadata.get_one(key).value
+            assert value == key.lower(), (value, key)
+
+        del os.environ[key]
+
+    remove_tmpdir(session, tmpdir)
+    return
+
+
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
@@ -285,3 +339,4 @@ if __name__ == '__main__':
         test_get(session, tmpdir)
         test_find(session, tmpdir)
         test_metadata(session, tmpdir)
+        test_add_job_metadata(session, tmpdir)

@@ -35,12 +35,7 @@ done
 vsc-prc-iput *.out --destination="$tmpdir/molecules" --verbose
 
 # Add job metadata to these output files
-PBS_NODELIST=`awk '{print $1}' $PBS_NODEFILE | paste -s -d, -`
-vsc-prc-imeta "$tmpdir/molecules/*.out" --action=add --verbose \
-              --object_avu=PBS_O_HOST,$PBS_O_HOST \
-              --object_avu=PBS_JOBID,$PBS_JOBID \
-              --object_avu=PBS_JOBNAME,$PBS_JOBNAME \
-              --object_avu=PBS_NODELIST,$PBS_NODELIST
+vsc-prc-add-job-metadata "$tmpdir/molecules/*.out" --verbose
 
 # Remove the scratch directory
 cd; rm -r $scratchdir

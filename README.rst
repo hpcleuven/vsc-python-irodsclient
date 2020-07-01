@@ -25,7 +25,7 @@ Installation
   root directory
 * Add the `$VSC_PRC_ROOT/lib` directory to your `$PYTHONPATH`
 * Add the `$VSC_PRC_ROOT/tools` directory to your `$PATH`
-* Run the tests in the `test` folder
+* Run the tests in the `$VSC_PRC_ROOT/test` folder
 
 
 On VSC's BrENIAC cluster, VSC-PRC and its dependencies are also available

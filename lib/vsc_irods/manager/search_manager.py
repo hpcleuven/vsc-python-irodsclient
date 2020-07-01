@@ -10,11 +10,19 @@ from vsc_irods.manager import Manager
 class SearchManager(Manager):
     """ A class for easier searching in the iRODS file system """
 
-    def glob(self, *args, debug=False, **kwargs):
+    def glob(self, *args, debug=False):
         """ As iglob(), but returns a list instead of an iterator,
         similar to the glob.iglob builtin.
+
+        Arguments:
+
+        args: one or more str
+            The search patterns
+
+        debug: bool (default: False)
+            Set to True for debugging info
         """
-        results = [hit for hit in self.iglob(*args, debug=debug, **kwargs)]
+        results = [hit for hit in self.iglob(*args, debug=debug)]
 
         self.log('DBG| returning %s' % str(results), debug)
         return results

@@ -42,15 +42,24 @@ class BulkManager(Manager):
             search_manager.iglob() iterator). Matching data objects
             (and, if used recursively, collections) will be removed.
 
+        recurse: bool (default: False)
+            Whether to use recursion, meaning that also matching collections
+            and their data objects and subcollections will be removed.
+
         force: bool (default: False)
             Whether to imediately remove the collections or data objects,
             without putting them in the trash.
 
-        options: (any remaining keywords arguments)
-            Additional options to be passed on to PRC's remove()
-            and unlink() methods.
+        prompt: bool (default: False)
+            Whether to prompt for permission before removing a data
+            object or collection.
 
-        TODO: remaining arguments
+        verbose: bool (default: False)
+            Whether to print more output.
+
+        options: (any remaining keywords arguments)
+            Additional options to be passed on to PRC's
+            collections.remove() and data_objects.unlink() methods.
         """
         if isinstance(iterator, str):
             iterator = self.session.search.iglob(iterator)
@@ -96,13 +105,27 @@ class BulkManager(Manager):
             (and, if used recursively, collections) will be copied
             to the local machine.
 
+        local_path: str (default: '.')
+            The (absolute or relative) path on the local file system
+            where the data objects and collections wil be copied to.
+
+        recurse: bool (default: False)
+            Whether to use recursion, meaning that also matching collections
+            and their data objects and subcollections will be copied.
+
         force: bool (default: False)
             Whether to overwrite existing local files.
 
-        options: (any remaining keywords arguments)
-            Additional options to be passed on to PRC's get() method.
+        return_data_objects: (default: False)
+            Whether to return a list of iRODSDataObject instances
+            of the uploaded data objects.
 
-        TODO: remaining arguments
+        verbose: bool (default: False)
+            Whether to print more output.
+
+        options: (any remaining keywords arguments)
+            Additional options to be passed on to PRC's
+            data_objects.get() method.
         """
         if isinstance(iterator, str):
             iterator = self.session.search.iglob(iterator)
@@ -146,7 +169,7 @@ class BulkManager(Manager):
         return objects if return_data_objects else None
 
     def put(self, iterator, irods_path='.', recurse=False, force=False,
-            create_options={}, verbose=False, **options):
+            verbose=False, create_options={}, **options):
         """ Copy local files and/or folders to the iRODS server,
         in a manner that resembles the UNIX 'cp' command.
 
@@ -165,13 +188,27 @@ class BulkManager(Manager):
             local machine (and, if used recursively, directories) will
             be copied to the iRODS server.
 
+        irods_path: str (default: '.')
+            The (absolute or relative) path on the iRODS file system
+            where the local files and folders wil be copied to.
+
+        recurse: bool (default: False)
+            Whether to use recursion, meaning that also matching folders
+            and their files and subfolders will be copied to the iRODS server.
+
         force: bool (default: False)
             Whether to overwrite existing data objects.
 
-        options: (any remaining keywords arguments)
-            Additional options to be passed on to PRC's put() method.
+        verbose: bool (default: False)
+            Whether to print more output.
 
-        TODO: remaining arguments
+        create_options: dict (default: {})
+            Additional options to be passed on to PRC's
+            collections.create() method.
+
+        options: (any remaining keywords arguments)
+            Additional options to be passed on to PRC's
+            data_objects.put() method.
         """
         if type(iterator) is str:
             iterator = glob.iglob(iterator)
@@ -227,6 +264,11 @@ class BulkManager(Manager):
         action: str
             The action to perform. Choose either 'add' or 'remove'.
 
+        recurse: bool (default: False)
+            Whether to use recursion, meaning that metadata will be
+            modified for matching collections and their data objects
+            and subcollections.
+
         collection_avu: tuple or list of tuples (default: [])
             One or several attribute-value[-unit]] tuples to be modified
             for collections.
@@ -235,7 +277,8 @@ class BulkManager(Manager):
             One or several attribute-value[-unit]] tuples to be modified
             for data objects.
 
-        TODO: remaining arguments
+        verbose: bool (default: False)
+            Whether to print more output.
         """
         if isinstance(iterator, str):
             iterator = self.session.search.iglob(iterator)
@@ -304,7 +347,13 @@ class BulkManager(Manager):
             search_manager.iglob() iterator). Job metadata will be added for
             matching data objects and, if used recursively, collections.
 
-        TODO: remaining arguments
+        recurse: bool (default: False)
+            Whether to use recursion, meaning that job metadata will be
+            added to matching collections and their data objects and
+            subcollections.
+
+        verbose: bool (default: False)
+            Whether to print more output.
         """
         # Gather job-related information from available environment variables
         avus = []

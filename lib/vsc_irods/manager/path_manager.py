@@ -44,7 +44,7 @@ class PathManager(Manager):
             should be changed.
 
         verbose: bool (default: False)
-            Set to True for more verbose output
+            Whether to print more output
         """
         self._icwd = self.get_absolute_irods_path(path)
         self.log('Changed iRODS CWD for this session to: %s' % self._icwd,
@@ -67,7 +67,22 @@ class PathManager(Manager):
         return abs_path
 
     def imkdir(self, path, parents=False, verbose=False, **options):
-        """ Creates a collection on the iRODS file system """
+        """ Creates a collection on the iRODS file system
+
+        Arguments:
+
+        path: str
+            The (absolute or relative) collection path to be created
+
+        parents: bool (default: False)
+            Whether to also create missing parent collections
+
+        verbose: bool (default: False)
+            Whether to print more output
+
+        options: (any remaining keywords arguments)
+            Additional options to be passed on to PRC's collections.create()
+        """
         abs_path = self.get_absolute_irods_path(path)
 
         assert not self.session.collections.exists(abs_path), \

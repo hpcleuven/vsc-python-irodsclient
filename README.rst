@@ -28,6 +28,14 @@ Installation
 * Run the tests in the `test` folder
 
 
+On VSC's BrENIAC cluster, VSC-PRC and its dependencies are also available
+as a module:
+
+.. code:: bash
+
+    module use /apps/leuven/common/modules/all
+    module load vsc-python-irodsclient/development
+
 .. _VSC: https://vscentrum.be
 .. _PRC: https://github.com/irods/python-irodsclient
 .. _iRODS: https://irods.org

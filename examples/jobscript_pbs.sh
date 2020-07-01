@@ -6,7 +6,12 @@
 # This jobscript illustrates how the VSC-PRC command line tools
 # can be used in a jobscript (here for a PBS-like resource manager)
 
-# First, create an iRODS collection with data for this example
+# First, we set up VSC-PRC, which on VSC's BrENIAC cluster
+# can be done as follows:
+module use /apps/leuven/common/modules/all
+module load vsc-python-irodsclient/development
+
+# Next, create an iRODS collection with data for this example
 # In regular workflows, such a collection will already exist
 tmpdir="~/.irodstest"
 vsc-prc-imkdir $tmpdir

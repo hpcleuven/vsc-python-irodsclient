@@ -37,7 +37,7 @@ To this end, VSC-PRC offers a Python module and associated command line scripts:
 
     >>> with VSCiRODSSession() as session:
     >>>     for item in session.search.find('~', pattern='*.txt', types='f',
-    >>>                                     collection_avu=('Author', 'Me')):
+    >>>                                     object_avu=('Author', 'Me')):
     >>>         print(x)
 
   This can be used in conjunction with the 'bulk' operations, e.g.:
@@ -46,7 +46,7 @@ To this end, VSC-PRC offers a Python module and associated command line scripts:
 
     >>> with VSCiRODSSession() as session:
     >>>     iterator = session.search.find('~', pattern='*.txt', types='f',
-    >>>                                    collection_avu=('Author', 'Me'))
+    >>>                                    object_avu=('Author', 'Me'))
     >>>     session.bulk.get(iterator, local_path='.')
 
 

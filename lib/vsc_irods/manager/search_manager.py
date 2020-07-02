@@ -84,10 +84,10 @@ class SearchManager(Manager):
 
         Examples:
 
-        >>> session.find('.', name='*mol*/*.xyz', types='f',
+        >>> session.find('.', pattern='*mol*/*.xyz', types='f',
                          object_avu=('=,kind', 'like,%organic'))
             ['data/molecules/c6h6.xyz', './data/molecules/ch3cooh.xyz']
-        >>> session.find('~/data', name='molecules', types='d')
+        >>> session.find('~/data', pattern='molecules', types='d')
             ['~/data/molecules']
 
         Arguments:

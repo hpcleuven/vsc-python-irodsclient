@@ -30,6 +30,7 @@ To this end, VSC-PRC offers a Python module and associated command line scripts:
   - uploading files and folders
   - removing data objects and collections
   - adding and modifying metadata
+  - listing the disk usage
 
   More advanced search capabilities (i.e. beyond the above glob patterns)
   are also provided. For example, the following can be used to list all
@@ -61,6 +62,7 @@ To this end, VSC-PRC offers a Python module and associated command line scripts:
   - vsc-prc-iput
   - vsc-prc-imkdir
   - vsc-prc-irm
+  - vsc-prc-size
   - vsc-prc-imeta
   - vsc-prc-add-job-metadata
 

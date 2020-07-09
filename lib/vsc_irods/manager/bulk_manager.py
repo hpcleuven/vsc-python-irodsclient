@@ -219,6 +219,8 @@ class BulkManager(Manager):
                'Collection %s does not exist' % idest
 
         for item in iterator:
+            item = item.rstrip('/')
+
             if os.path.isdir(item):
                 if recurse:
                     d = os.path.basename(item)

@@ -93,14 +93,16 @@ def test_put(session, tmpdir):
     hits = session.search.glob(tmpdir + '/*', debug=True)
     assert hits == ['%s/README' % tmpdir], hits
 
-    session.bulk.put('data/molec*', irods_path=tmpdir, recurse=True,
+    session.bulk.put('./data/molecule_names*', irods_path=tmpdir, recurse=True,
                      verbose=True)
-
+    session.bulk.put('data/molecules/', irods_path=tmpdir, recurse=True,
+                     verbose=True)
     session.bulk.put('data/molec*', irods_path=tmpdir, recurse=True,
                      force=True, verbose=True)
 
     hits = session.search.glob(tmpdir + '/molec*', debug=True)
     expected = ['%s/molecules' % tmpdir, '%s/molecule_names.txt' % tmpdir]
+    assert len(hits) == len(expected), hits
     assert all([hit in expected for hit in hits]), hits
 
     hits = session.search.glob(tmpdir + '/molecules/*', debug=True)

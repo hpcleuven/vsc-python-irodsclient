@@ -53,29 +53,52 @@ class SearchManager(Manager):
         debug: bool (default: False)
             Set to True for debugging info
         """
-        self.log('DBG| glob pattern = %s' % pattern, debug)
+        self.log('DBG| search.iglob pattern: %s' % pattern, debug)
 
-        if '*' not in pattern:
-            path = self.session.path.get_absolute_irods_path(pattern)
-
-            if (self.session.data_objects.exists(path) or
-                self.session.collections.exists(path)):
-                yield pattern.rstrip('/')
-            else:
-                yield
-        else:
+        if '*' in pattern:
             index = pattern.index('*')
-            path = os.path.dirname(pattern[:index])
-            remainder = pattern[len(path)+1:] if len(path) > 0 else pattern
+            path_root = os.path.dirname(pattern[:index])
+        else:
+            path_root = pattern
 
-            self.log('DBG| path = %s' % path, debug)
-            self.log('DBG| remainder = %s' % remainder, debug)
+        path_root = path_root.rstrip('/') if path_root else '.'
+        path_root_abs = self.session.path.get_absolute_irods_path(path_root)
 
-            gen = self.find(irods_path=path, pattern=remainder, types='d,f',
-                            use_wholename=True, debug=debug)
+        # First, the collections
+        pattern_collection = self.session.path.get_absolute_irods_path(pattern)
+        pattern_collection = pattern_collection.replace('*', '%')
+        self.log('DBG| search.iglob pattern_collection: %s' % \
+                 pattern_collection, debug)
 
-            for result in gen:
-                yield result
+        fields = [Collection.name]
+        criteria = [Criterion('like',  Collection.name, pattern_collection),
+                    Criterion('not like',  Collection.name,
+                              pattern_collection + '/%')]
+        q = self.session.query(*fields).filter(*criteria)
+
+        for result in q.get_results():
+            path = result[Collection.name].replace(path_root_abs, path_root, 1)
+            yield path
+
+        # Next, the data objects
+        pattern_collection = os.path.dirname(pattern_collection)
+        pattern_object = os.path.basename(pattern)
+        pattern_object = pattern_object.replace('*', '%')
+        self.log('DBG| search.iglob pattern_object: %s' % pattern_object, debug)
+
+        fields = [Collection.name, DataObject.name]
+        criteria = [Criterion('like',  Collection.name, pattern_collection),
+                    Criterion('not like',  Collection.name,
+                              pattern_collection + '/%'),
+                    Criterion('like',  DataObject.name, pattern_object)]
+
+        q = self.session.query(*fields).filter(*criteria)
+
+        for result in q.get_results():
+            path = os.path.join(result[Collection.name],
+                                result[DataObject.name])
+            path = path.replace(path_root_abs, path_root, 1)
+            yield path
 
     def find(self, irods_path='.', pattern='*', use_wholename=False,
              types='d,f', collection_avu=[], object_avu=[], debug=False):

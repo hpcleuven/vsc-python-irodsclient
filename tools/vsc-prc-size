@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from vsc_irods.session import VSCiRODSSession
+
+
+desc = """Prints the disk usage of iRODS data objects and collections
+using the VSC Python iRODS client
+
+Example:
+
+vsc-prc-size -r "~/data/molec*"
+"""
+
+arg_parser = ArgumentParser(description=desc,
+                            formatter_class=RawDescriptionHelpFormatter)
+
+arg_parser.add_argument('args', nargs='*',
+                        help='glob pattern(s) for iRODS files and directories '
+                        'for which to report the disk usage. '
+                        'Note that, when including asterisks or a tilde in '
+                        'in a pattern, the pattern needs to be enclosed in '
+                        'quotes to avoid shell expansion to local paths.')
+
+arg_parser.add_argument('-H', '--human-readable', action='store_true',
+                        help='Instead of bytes, print in a more readable '
+                        'units of powers of 1024 bytes (e.g. "42M")')
+
+arg_parser.add_argument('-r', '--recurse', action='store_true',
+                        help='Turns on recursion')
+
+arg_parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Increases the verbosity level')
+
+options = arg_parser.parse_args()
+
+
+def format_size(size):
+    prefixes = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+    for prefix in prefixes:
+        if size < 1024.:
+            return '%.0f%s' % (size, prefix)
+        size /= 1024.
+    else:
+        return '%.0fY' % size
+
+
+with VSCiRODSSession(txt='-') as session:
+    for arg in options.args:
+        iterator = session.bulk.size(arg, recurse=options.recurse,
+                                     verbose=options.verbose)
+
+        for path, size in iterator:
+            size = format_size(size) if options.human_readable else str(size)
+            print('%s\t%s' % (size, path))

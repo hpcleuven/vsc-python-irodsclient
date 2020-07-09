@@ -1,5 +1,6 @@
 import os
 import glob
+from irods.column import Criterion
 from irods.keywords import FORCE_FLAG_KW
 from irods.meta import iRODSMeta
 from irods.models import Collection, DataObject
@@ -376,3 +377,57 @@ class BulkManager(Manager):
                       object_avu=avus,
                       recurse=recurse,
                       verbose=verbose)
+
+    def size(self, iterator, recurse=False, verbose=False):
+        """ Yields (path, size-in-bytes) tuples for the selected data
+        objects and collections.
+
+        Examples:
+
+        >>> session.bulk.size('~/data/out*.txt')
+        >>> session.bulk.size('./data', recurse=True)
+
+        Arguments:
+
+        iterator: iterator or str
+            Defines which items are subject to the bulk operation.
+            Can be an iterator (e.g. using search_manager.find())
+            or a string (which will be used to construct a
+            search_manager.iglob() iterator). Data sizes will be returned
+            for matching data objects and, if used recursively, collections.
+
+        recurse: bool (default: False)
+            Whether to use recursion, meaning that the data size of
+            matching collections will be calculated as the sum of
+            their data objects and subcollection sizes.
+
+        verbose: bool (default: False)
+            Whether to print more output.
+        """
+        if isinstance(iterator, str):
+            iterator = self.session.search.iglob(iterator)
+
+        for item in iterator:
+            path = self.session.path.get_absolute_irods_path(item)
+
+            if self.session.collections.exists(path):
+                if recurse:
+                    new_iterator = self.size(item + '/*', recurse=True,
+                                             verbose=verbose)
+                    size = sum([result[1] for result in new_iterator])
+                else:
+                    self.log('Skipping collection %s (no recursion)' % item,
+                             verbose)
+            else:
+                dirname = os.path.dirname(path)
+                basename = os.path.basename(path)
+                criteria = [Criterion('=', Collection.name, dirname),
+                            Criterion('=', DataObject.name, basename)]
+                fields = [DataObject.size]
+                q = self.session.query(*fields).filter(*criteria)
+
+                results = [result for result in q.get_results()]
+                assert len(results) == 1
+                size = results[0][DataObject.size]
+
+            yield (item, size)

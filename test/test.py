@@ -352,6 +352,28 @@ def test_add_job_metadata(session, tmpdir):
     return
 
 
+def test_size(session, tmpdir):
+    create_tmpdir(session, tmpdir)
+
+    session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
+    session.path.ichdir(tmpdir)
+
+    # Check with individual data objects
+    iterator = session.search.find('./data', types='f')
+    total = 0
+    for path, size in session.bulk.size(iterator, verbose=True):
+        print('Size of %s in bytes: %d' % (path, size))
+        total += size
+    assert total == 3277, total
+
+    # Check with the parent collection, recursively
+    path, size = next(session.bulk.size('data/', recurse=True, verbose=True))
+    assert total == size, (total, size)
+
+    remove_tmpdir(session, tmpdir)
+    return
+
+
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
@@ -363,3 +385,4 @@ if __name__ == '__main__':
         test_find(session, tmpdir)
         test_metadata(session, tmpdir)
         test_add_job_metadata(session, tmpdir)
+        test_size(session, tmpdir)

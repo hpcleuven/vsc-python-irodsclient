@@ -16,6 +16,10 @@ vsc-prc-iput -r ../test/data* -d $irods_path --verbose
 echo "iRODS tmpdir content:"
 ils -r .
 
+# Get disk usage
+echo "TEST: vsc-prc-size"
+vsc-prc-size $irods_path -r -H --verbose
+
 # Fetch content to local directory
 echo "TEST: vsc-prc-iget"
 local_tmpdir=`mktemp -d`

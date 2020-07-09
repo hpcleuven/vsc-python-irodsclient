@@ -167,16 +167,37 @@ def test_find(session, tmpdir):
     session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
     session.path.ichdir(tmpdir)
 
-    references = []
-    for (folder, subfolder, files) in os.walk('./data'):
-        references.extend([os.path.join(folder, f) for f in files])
-        references.extend([os.path.join(folder, d) for d in subfolder])
+    ndepths = 3
+    all_refs = {depth: [] for depth in range(ndepths)}
+    all_refs[0].append('./data')
 
-    n = 0
-    for item in session.search.find('./data', debug=False):
-        assert references.count(item) == 1, (item, 'not in', references)
-        n += 1
-    assert n == len(references), '%d items are missing!' % (len(references) - n)
+    for (folder, subfolder, files) in os.walk('./data'):
+        depth = folder.count('/')
+        all_refs[depth].extend([os.path.join(folder, f) for f in files])
+        all_refs[depth].extend([os.path.join(folder, d) for d in subfolder])
+
+    for depth, refs in all_refs.items():
+        print('depth: %s, references: %s' % (depth, refs))
+
+    for mindepth in range(ndepths):
+        for maxdepth in list(range(mindepth, ndepths)) + [-1]:
+            if maxdepth == -1:
+                depths = list(range(mindepth, ndepths))
+            else:
+                depths = list(range(mindepth, maxdepth + 1))
+
+            print('Checking mindepth = %d, maxdepth = %d, depths = %s' %
+                  (mindepth, maxdepth, depths))
+
+            refs = [item for depth in depths for item in all_refs[depth]]
+
+            iterator = session.search.find('./data', mindepth=mindepth,
+                                           maxdepth=maxdepth, debug=True)
+            n = 0
+            for item in iterator:
+                assert item in refs, (item, 'not in', refs)
+                n += 1
+            assert n == len(refs), '%d items are missing!' % (len(refs) - n)
 
     remove_tmpdir(session, tmpdir)
     return

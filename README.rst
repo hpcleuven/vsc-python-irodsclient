@@ -25,8 +25,11 @@ To this end, VSC-PRC offers a Python module and associated command line scripts:
     >>> with VSCiRODSSession() as session:
     >>>     session.bulk.get('~/my_irods_collection/*.txt', local_path='.')
 
-  Other 'bulk' operations are available for uploading files and folders to
-  iRODS, removing data objects and collections, and modifying metadata.
+  Other 'bulk' operations are available for:
+
+  - uploading files and folders
+  - removing data objects and collections
+  - adding and modifying metadata
 
   More advanced search capabilities (i.e. beyond the above glob patterns)
   are also provided. For example, the following can be used to list all

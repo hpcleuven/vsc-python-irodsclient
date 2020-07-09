@@ -8,6 +8,7 @@ VSC Python iRODS client
 
 Example:
 
+vsc-prc-find --maxdepth 1
 vsc-prc-find "~/data/" --name="*.xyz" --object_avu="=,Kind;like,%org%"
 vsc-prc-find "~/data/" --name="*.out" --object_avu="Machine;=,Cray-XC40"
 """
@@ -57,6 +58,14 @@ arg_parser.add_argument('-t', '--types', default='d,f',
                         'to include: "d" for directories (i.e. collections), '
                         '"f" for files (i.e. data objects)')
 
+arg_parser.add_argument('--mindepth', default=0, type=int,
+                        help='Minimal depth with respect to the root '
+                        'collection (default: 0, i.e. no minimum limit)')
+
+arg_parser.add_argument('--maxdepth', default=-1, type=int,
+                        help='Maximal depth with respect to the root '
+                        'collection (default: -1, i.e. no maximum limit)')
+
 arg_parser.add_argument('--debug', action='store_true',
                         help='Increases the verbosity level for debugging')
 
@@ -86,6 +95,8 @@ with VSCiRODSSession(txt='-') as session:
                                    collection_avu=collection_avu,
                                    object_avu=object_avu,
                                    types=options.types,
+                                   mindepth=options.mindepth,
+                                   maxdepth=options.maxdepth,
                                    debug=options.debug)
     for item in iterator:
         print(item)

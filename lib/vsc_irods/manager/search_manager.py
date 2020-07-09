@@ -9,7 +9,6 @@ from vsc_irods.manager import Manager
 
 class SearchManager(Manager):
     """ A class for easier searching in the iRODS file system """
-
     def glob(self, *args, debug=False):
         """ As iglob(), but returns a list instead of an iterator,
         similar to the glob.iglob builtin.
@@ -100,8 +99,68 @@ class SearchManager(Manager):
             path = path.replace(path_root_abs, path_root, 1)
             yield path
 
+    def walk(self, collection, mindepth=0, maxdepth=-1, return_objects=False,
+             debug=False):
+        """
+        Top-down collection tree generator, yielding 3-tuples of
+        (collection, [list of subcollections], [list of data objects]).
+
+        Only those tuples are returned for which the subcollections
+        and data objects are within the selected depth range.
+
+        Arguments:
+
+        collection: str or iRODSCollection instance
+            The root of the collection tree in which to search
+
+        mindepth: int (default: 0)
+            Minimal depth with respect to the root collections
+
+        maxdepth: int (default: -1)
+            Maximal depth with respect to the root collections
+
+        return_objects: bool (default: True)
+            Whether to return path strings or the corresponding objects
+            (iRODSCollection and iRODSDataObject instances)
+
+        debug: bool (default: False)
+            Set to True for debugging info
+
+        """
+        assert mindepth >= 0
+
+        if maxdepth == -1 or maxdepth >= mindepth:
+            if isinstance(collection, str):
+                abs_path = self.session.path.get_absolute_irods_path(collection)
+                collection = self.session.collections.get(abs_path)
+
+            if mindepth <= 1 and maxdepth != 0:
+                if return_objects:
+                    yield (collection,
+                           collection.subcollections,
+                           collection.data_objects)
+                else:
+                    yield (collection.path,
+                           [subcollection.path
+                            for subcollection in collection.subcollections],
+                           [data_object.path
+                            for data_object in collection.data_objects])
+
+            if maxdepth != 0:
+                for subcollection in collection.subcollections:
+                    self.log('DBG| search.walk recursing subcollection: %s'
+                             % subcollection.path, debug)
+
+                    new_mindepth = max(0, mindepth - 1)
+                    new_maxdepth = max(-1, maxdepth - 1)
+                    yield from self.walk(subcollection,
+                                         mindepth=new_mindepth,
+                                         maxdepth=new_maxdepth,
+                                         return_objects=return_objects)
+
     def find(self, irods_path='.', pattern='*', use_wholename=False,
-             types='d,f', collection_avu=[], object_avu=[], debug=False):
+             types='d,f', mindepth=0, maxdepth=-1, collection_avu=[],
+             object_avu=[], debug=False):
         """ Returns a list of iRODS collection and data object paths
         which match the given pattern, similar to the UNIX `find` command.
 
@@ -110,13 +169,14 @@ class SearchManager(Manager):
         >>> session.find('.', pattern='*mol*/*.xyz', types='f',
                          object_avu=('=,kind', 'like,%organic'))
             ['data/molecules/c6h6.xyz', './data/molecules/ch3cooh.xyz']
-        >>> session.find('~/data', pattern='molecules', types='d')
+        >>> session.find('~/data*', pattern='molecules', types='d')
             ['~/data/molecules']
 
         Arguments:
 
         irods_path: str (default: '.')
-            Root of the iRODS collection tree in which to search
+            Glob pattern of the roots of the iRODS collection trees
+            in which to search
 
         pattern: str (default: '*')
             The search pattern
@@ -133,6 +193,12 @@ class SearchManager(Manager):
             * 'd' for directories (i.e. collections)
             * 'f' for files (i.e. data objects)
 
+        mindepth: int (default: 0)
+            Minimal depth with respect to the root collections
+
+        maxdepth: int (default: -1)
+            Maximal depth with respect to the root collections
+
         collection_avu: tuple or list of tuples (default: [])
             One or several attribute[-value[-unit]] patterns to be used
             in filtering collections.
@@ -144,17 +210,18 @@ class SearchManager(Manager):
 		debug: bool (default: False)
             Set to True for debugging info
         """
-        def get_final_path(path_abs):
-            # Paths returned by find() must start with the given irods_path
-            # This function determines this path from the given absolute path,
-            # and the irods_path and irods_path_abs variables
-            path_final = os.path.join(irods_path,
-                                      path_abs[len(irods_path_abs)+1:])
-            msg = 'DBG| path_abs = %s ; irods_path_abs = %s ; path_final = %s'
-            self.log(msg % (path_abs, irods_path_abs, path_final), debug)
-            return path_final
+        # Process arguments:
+        assert mindepth >= 0, 'mindepth argument must be >= 0'
+        if isinstance(object_avu, tuple): object_avu = [object_avu]
+        if isinstance(collection_avu, tuple): collection_avu = [collection_avu]
 
+        if not use_wholename and '/' in pattern:
+            msg = "Pattern %s contains a slash. UNIX file names usually don't, "
+            msg += "so this search will probably yield no results. Setting "
+            msg += "'wholename=True' may help you find what you're looking for."
+            warnings.warn(msg % pattern)
 
+        # Set up the metadata fields and criteria for the queries:
         def parse_avu_component(component):
             if component.count(',') == 0:
                 operation, meta_pattern = '=', component
@@ -164,86 +231,96 @@ class SearchManager(Manager):
                 raise ValueError('Cannot parse AVU component: %s' % component)
             return operation, meta_pattern
 
+        meta_fields = {Collection: [], DataObject: []}
+        meta_criteria = {Collection: [], DataObject: []}
 
-        if isinstance(object_avu, tuple): object_avu = [object_avu]
-        if isinstance(collection_avu, tuple): collection_avu = [collection_avu]
+        for model, avu_list in zip([Collection, DataObject],
+                                   [collection_avu, object_avu]):
+            for avu in avu_list:
+                if model == Collection:
+                    fields = [CollectionMeta.name, CollectionMeta.value,
+                              CollectionMeta.units]
+                elif model == DataObject:
+                    fields = [DataObjectMeta.name, DataObjectMeta.value,
+                              DataObjectMeta.units]
 
-        irods_path_abs = self.session.path.get_absolute_irods_path(irods_path)
+                for item, field in zip(avu, fields):
+                    operation, meta_pattern = parse_avu_component(item)
+                    self.log('DBG| AVU criterion: %s %s %s' % \
+                             (operation, field, meta_pattern), debug)
+                    criterion = Criterion(operation, field, meta_pattern)
+                    meta_criteria[model].append(criterion)
+                    meta_fields[model].append(field)
 
-        if not use_wholename and '/' in pattern:
-            msg = "Pattern %s contains a slash. UNIX file names usually don't, "
-            msg += "so this search will probably yield no results. Setting "
-            msg += "'wholename=True' may help you find what you're looking for."
-            warning.warn(msg % pattern)
+        # Loop over the glob-pattern-matching collections and data objects
+        for path_root in self.iglob(irods_path, debug=debug):
+            self.log('DBG| search.find path_root: %s' % path_root, debug)
+            path_root_abs = self.session.path.get_absolute_irods_path(path_root)
 
-        for t in types.split(','):
-            if t == 'd':
-                coll_name = os.path.join(irods_path_abs, pattern)
-                coll_name = coll_name.replace('*', '%')
-                self.log('DBG| find pattern coll_name = %s' % coll_name, debug)
+            if not self.session.collections.exists(path_root_abs):
+                if 'f' in types.split(','):
+                    yield path_root
+                continue
 
-                criteria = [Criterion('like', Collection.name, coll_name)]
-                fields = [Collection.name]
+            # Walk the collection trees
+            iterators = [self.walk(path_root, mindepth=mindepth,
+                                   maxdepth=maxdepth, return_objects=True,
+                                   debug=debug)]
+            if mindepth == 0:
+                # Also include the root collection,
+                # which is not covered by self.walk
+                collection = self.session.collections.get(path_root_abs)
+                iterators.insert(0, [(collection, [collection], [])])
 
-                meta_fields = [CollectionMeta.name, CollectionMeta.value,
-                               CollectionMeta.units]
+            iterator = itertools.chain(*iterators)
 
-                for avu in collection_avu:
-                    for item, field in zip(avu, meta_fields):
-                        operation, meta_pattern = parse_avu_component(item)
-                        self.log('DBG| AVU criterion: %s %s %s' % \
-                                 (operation, field, meta_pattern), debug)
-                        criterion = Criterion(operation, field, meta_pattern)
-                        criteria.append(criterion)
-                        fields.append(field)
+            for (collection, subcollections, data_objects) in iterator:
+                self.log('DBG| search.find collection: %s' % collection.path,
+                         debug)
+                # Now we are left with collections and data objects
+                # which match the depths and the given 'irods_path'
+                # glob pattern, and we just need to further filter
+                # on the (whole)name pattern and the AVUs.
 
-                q = self.session.query(*fields).filter(*criteria)
+                # Things to keep in mind:
+                # * Collection: 'name' attribute refers to full path
+                #               'path' attribute non-existent
+                # * DataObject: 'name' attribute refers to basename
+                #               'path' attribute non-existent
+                # * iRODSCollection and iRODSDataObject:
+                #               'name' refers to basename,
+                #               'path' referse to full path
 
-                for result in q.get_results():
-                    path = result[Collection.name]
-                    path = get_final_path(path)
-                    yield path
+                for t, items in zip(['d', 'f'], [subcollections, data_objects]):
+                    if t not in types.split(','):
+                        continue
 
-            elif t == 'f':
-                obj_name = os.path.basename(pattern).replace('*', '%')
-                self.log('DBG| find pattern obj_name = %s' % obj_name, debug)
+                    for item in items:
+                        name = item.path if use_wholename else item.name
+                        if not fnmatch.fnmatch(name, pattern):
+                            continue
 
-                # PRC uses Collection.name criteria as follows:
-                #   /.../dir -> only files in this collection
-                #   /.../dir/% -> only files in all subcollections
-                # To cover both, we need two generators.
-                dirs = [os.path.dirname(pattern),
-                        os.path.join(os.path.dirname(pattern), '*')]
+                        if t == 'd':
+                            q = self.session.query(Collection.name,
+                                                   *meta_fields[Collection])
+                            criterion = Criterion('=',  Collection.name,
+                                                  item.path)
+                            q = q.filter(criterion, *meta_criteria[Collection])
 
-                meta_fields = [DataObjectMeta.name, DataObjectMeta.value,
-                               DataObjectMeta.units]
+                        elif t == 'f':
+                            q = self.session.query(Collection.name,
+                                                   DataObject.name,
+                                                   *meta_fields[DataObject])
+                            criteria = [Criterion('=',  Collection.name,
+                                                  collection.path),
+                                        Criterion('=',  DataObject.name,
+                                                  item.name)]
+                            q = q.filter(*criteria, *meta_criteria[DataObject])
 
-                generators = []
-                for d in dirs:
-                    coll_name = os.path.join(irods_path_abs, d).rstrip('/')
-                    coll_name = coll_name.replace('*', '%')
-                    self.log('DBG| find pattern coll_name = %s' % coll_name,
-                             debug)
+                        results = [result for result in q.get_results()]
+                        assert len(results) in [0, 1], results
 
-                    criteria = [Criterion('like', Collection.name, coll_name),
-                                Criterion('like', DataObject.name, obj_name)]
-                    fields = [Collection.name, DataObject.name]
-
-                    for avu in object_avu:
-                        for item, field in zip(avu, meta_fields):
-                            operation, meta_pattern = parse_avu_component(item)
-                            self.log('DBG| AVU criterion: %s %s %s' % \
-                                     (operation, field, meta_pattern), debug)
-                            criterion = Criterion(operation, field,
-                                                  meta_pattern)
-                            criteria.append(criterion)
-                            fields.append(field)
-
-                    q = self.session.query(*fields).filter(*criteria)
-                    generators.append(q.get_results())
-
-                for result in itertools.chain(*generators):
-                    path = os.path.join(result[Collection.name],
-                                        result[DataObject.name])
-                    path = get_final_path(path)
-                    yield path
+                        if len(results) == 1:
+                            path = item.path.replace(path_root_abs,
+                                                     path_root.rstrip('/'), 1)
+                            yield path

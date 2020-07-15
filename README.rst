@@ -22,6 +22,8 @@ To this end, VSC-PRC offers a Python module and associated command line scripts:
 
   .. code:: python
 
+    >>> from vsc_irods.session import VSCiRODSSession
+    >>>
     >>> with VSCiRODSSession() as session:
     >>>     session.bulk.get('~/my_irods_collection/*.txt', local_path='.')
 

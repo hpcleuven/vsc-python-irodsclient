@@ -104,7 +104,6 @@ as a module:
 
 .. code:: bash
 
-    module use /apps/leuven/common/modules/all
     module load vsc-python-irodsclient/development
 
 .. _VSC: https://vscentrum.be

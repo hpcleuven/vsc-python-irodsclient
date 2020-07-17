@@ -76,7 +76,8 @@ def test_imkdir(session, tmpdir):
         msg += 'and recurse=False is expected to raise an AssertionError'
         raise RuntimeError(msg)
 
-    # But this should work though
+    # But these should work though
+    session.path.imkdir(nested_dir, parents=True, verbose=True)
     session.path.imkdir(nested_dir, parents=True, verbose=True)
 
     abs_path = session.path.get_absolute_irods_path(nested_dir)

@@ -75,7 +75,8 @@ class PathManager(Manager):
             The (absolute or relative) collection path to be created
 
         parents: bool (default: False)
-            Whether to also create missing parent collections
+            Whether to also create missing parent collections,
+            and not to raise an error when a collection already exists
 
         verbose: bool (default: False)
             Whether to print more output
@@ -84,15 +85,18 @@ class PathManager(Manager):
             Additional options to be passed on to PRC's collections.create()
         """
         abs_path = self.get_absolute_irods_path(path)
-
-        assert not self.session.collections.exists(abs_path), \
-            'Cannot create %s: collection already exists' % abs_path
+        already_exists = self.session.collections.exists(abs_path)
 
         if not parents:
+            assert not already_exists, \
+                   'Cannot create %s: collection already exists' % abs_path
+
+            dirname = os.path.dirname(abs_path)
             msg = 'Cannot create collection %s because the parent '
             msg += 'colllection does not exist and parents=False'
-            dirname = os.path.dirname(abs_path)
             assert self.session.collections.exists(dirname), msg % abs_path
 
-        self.log('Creating collection %s' % abs_path, verbose)
-        self.session.collections.create(abs_path, recurse=parents, **options)
+        if not already_exists:
+            self.log('Creating collection %s' % abs_path, verbose)
+            self.session.collections.create(abs_path, recurse=parents,
+                                            **options)

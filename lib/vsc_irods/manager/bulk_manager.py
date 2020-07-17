@@ -221,18 +221,16 @@ class BulkManager(Manager):
 
         for item in iterator:
             item = item.rstrip('/')
+            path = os.path.join(idest, os.path.basename(item))
 
             if os.path.isdir(item):
                 if recurse:
-                    d = os.path.basename(item)
-                    d = os.path.join(idest, d)
-
-                    if not self.session.collections.exists(d):
-                        self.log('Creating collection: %s' % d, verbose)
-                        self.session.collections.create(d, recurse=True,
+                    if not self.session.collections.exists(path):
+                        self.log('Creating collection: %s' % path, verbose)
+                        self.session.collections.create(path, recurse=True,
                                                         **create_options)
 
-                    self.put(item + '/*', irods_path=d, recurse=True,
+                    self.put(item + '/*', irods_path=path, recurse=True,
                              force=force, create_options=create_options,
                              verbose=verbose, **options)
                 else:
@@ -240,10 +238,15 @@ class BulkManager(Manager):
                              verbose)
 
             elif os.path.isfile(item):
-                self.log('Putting object %s in collection %s' % \
-                         (item, idest), verbose)
-                self.session.data_objects.put(item, idest + '/', force=force,
-                                              **options)
+                if self.session.data_objects.exists(path) and not force:
+                    self.log('Skipping object "%s" because an object with the' \
+                             ' same name already exists in collection "%s" ' \
+                             '(enable the "force" option to overwrite)' % \
+                             (item, idest), verbose)
+                else:
+                    self.log('Putting object %s in collection %s' % \
+                             (item, idest), verbose)
+                    self.session.data_objects.put(item, idest + '/', **options)
 
     def metadata(self, iterator, action='add', recurse=False, collection_avu=[],
                  object_avu=[], verbose=False):

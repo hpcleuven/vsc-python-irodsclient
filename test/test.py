@@ -95,8 +95,12 @@ def test_put(session, tmpdir):
 
     session.bulk.put('./data/molecule_names*', irods_path=tmpdir, recurse=True,
                      verbose=True)
-    session.bulk.put('data/molecules/', irods_path=tmpdir, recurse=True,
-                     verbose=True)
+
+    print('> Expecting a message that an object with same name already exists:')
+    session.bulk.put('data/molecule_names.txt', irods_path=tmpdir,
+                     recurse=False, verbose=True)
+
+    print('> No such message expected here:')
     session.bulk.put('data/molec*', irods_path=tmpdir, recurse=True,
                      force=True, verbose=True)
 

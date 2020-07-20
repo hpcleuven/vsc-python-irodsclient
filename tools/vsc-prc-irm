@@ -14,8 +14,8 @@ arg_parser = ArgumentParser(description=desc,
                             formatter_class=RawDescriptionHelpFormatter)
 
 arg_parser.add_argument('args', nargs='*',
-                        help='glob pattern(s) for iRODS files and directories '
-                        'to be removed. '
+                        help='glob pattern(s) for iRODS collections and data '
+                        'objects to be removed. '
                         'Note that, when including asterisks or a tilde in '
                         'in a pattern, the pattern needs to be enclosed in '
                         'quotes to avoid shell expansion to local paths.')

@@ -514,7 +514,9 @@ class BulkManager(Manager):
                 q = self.session.query(*fields).filter(*criteria)
 
                 results = [result for result in q.get_results()]
-                assert len(results) == 1
+                assert len(results) == 1, 'Different replicas of data ' + \
+                       'object %s have different sizes' % path
+
                 size = results[0][DataObject.size]
 
             yield (item, size)

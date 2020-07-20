@@ -379,6 +379,39 @@ def test_size(session, tmpdir):
     return
 
 
+def test_move(session, tmpdir):
+    create_tmpdir(session, tmpdir)
+
+    session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
+    session.path.ichdir(tmpdir)
+
+    # Rename a single data object
+    source, dest = 'data/molecule_names.txt', 'data/names.txt'
+    session.bulk.move(source, dest, verbose=True)
+
+    source_abs = session.path.get_absolute_irods_path(source)
+    assert not session.data_objects.exists(source_abs)
+
+    dest_abs = session.path.get_absolute_irods_path(dest)
+    assert session.data_objects.exists(dest_abs)
+
+    # Move all the content to a new collection
+    source, dest = 'data', 'new'
+    size_0 = sum([size for p, size in session.bulk.size(source, recurse=True)])
+
+    session.path.imkdir(dest)
+    session.bulk.move(source + '/*', dest, verbose=True)
+
+    size_1 = sum([size for p, size in session.bulk.size(source, recurse=True)])
+    assert size_1 == 0, size_1
+
+    size_2 = sum([size for p, size in session.bulk.size(dest, recurse=True)])
+    assert size_0 == size_2, (size_0, size_2)
+
+    remove_tmpdir(session, tmpdir)
+    return
+
+
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
@@ -391,3 +424,4 @@ if __name__ == '__main__':
         test_metadata(session, tmpdir)
         test_add_job_metadata(session, tmpdir)
         test_size(session, tmpdir)
+        test_move(session, tmpdir)

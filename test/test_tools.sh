@@ -16,6 +16,13 @@ vsc-prc-iput -r ../test/data* -d $irods_path --verbose
 echo "iRODS tmpdir content:"
 ils -r .
 
+# Move items around
+echo "TEST: vsc-prc-imv"
+vsc-prc-imv $irods_path"/data/molecules" $irods_path"/data/newname" --verbose
+vsc-prc-imv $irods_path"/data/newname/*.xyz" $irods_path"/data/" --verbose
+vsc-prc-imv $irods_path"/data/newname" $irods_path"/data/molecules" --verbose
+vsc-prc-imv $irods_path"/data/*.xyz" $irods_path"/data/molecules" --verbose
+
 # Get disk usage
 echo "TEST: vsc-prc-size"
 vsc-prc-size $irods_path -r -H --verbose

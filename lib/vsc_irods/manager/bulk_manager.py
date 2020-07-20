@@ -87,6 +87,90 @@ class BulkManager(Manager):
                     self.session.data_objects.unlink(path, force=force,
                                                      **options)
 
+    def move(self, iterator, irods_path, prompt=False, verbose=False):
+        """ Moving or renaming iRODS data objects and/or collections,
+        similar to the UNIX `mv` command.
+
+        Raises an AssertionError if the iterator corresponds to more than
+        one item and the irods_path destination does not correspond to an
+        existing collection.
+
+        Examples:
+
+        >>> session.bulk.move('tmpfiles*', '~/tmpdir/', verbose=True)
+        >>> session.bulk.move('./parent/dirname', './parent/dirname_new')
+
+        Arguments:
+
+        iterator: iterator or str
+            Defines which items are subject to the bulk operation.
+            Can be an iterator (e.g. using search_manager.find())
+            or a string (which will be used to construct a
+            search_manager.iglob() iterator). Matching data objects
+            and collections will be moved to the new path.
+
+        irods_path: str (default: '.')
+            The (absolute or relative) path on the local file system
+            where the data objects and collections will moved to.
+
+        prompt: bool (default: False)
+            Whether to prompt for permission before moving a data
+            object or collection.
+
+        verbose: bool (default: False)
+            Whether to print more output.
+        """
+        def move_one(source, dest):
+            # Move/renames a single item
+            source_abs = self.session.path.get_absolute_irods_path(source)
+            dest_abs = self.session.path.get_absolute_irods_path(dest)
+
+            is_collection = self.session.collections.exists(source_abs)
+            kind = 'collection' if is_collection else 'data object'
+
+            if prompt:
+                ok = confirm('move', kind, source_abs + ' to ' + dest_abs)
+            else:
+                ok = True
+
+            if ok:
+                self.log('Moving %s %s to destination %s' % \
+                         (kind, source_abs, dest_abs), verbose)
+                if is_collection:
+                    self.session.collections.move(source_abs, dest_abs)
+                else:
+                    self.session.data_objects.move(source_abs, dest_abs)
+
+
+        if isinstance(iterator, str):
+            iterator = self.session.search.iglob(iterator)
+
+        try:
+            previous_item = next(iterator)
+        except StopIteration:
+            raise ValueError('Iterator yields no data objects or collections')
+
+        idest = self.session.path.get_absolute_irods_path(irods_path)
+
+        item = None
+        for item in iterator:
+            # There is more than one item, so irods_path needs
+            # to be an existing collection
+            assert self.session.collections.exists(idest), \
+                   'Target collection %s does not exist' % idest
+
+            move_one(previous_item, idest)
+            previous_item = item
+
+        if item is not None:
+            move_one(item, idest)
+        else:
+            # The iterator only held 1 item originally,
+            # and it hasn't been processed yet
+            move_one(previous_item, idest)
+
+        return
+
     def get(self, iterator, local_path='.', recurse=False, force=False,
             return_data_objects=False, verbose=False, **options):
         """ Copy iRODS data objects and/or collections to the local machine.

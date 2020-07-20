@@ -192,7 +192,7 @@ class BulkManager(Manager):
 
         local_path: str (default: '.')
             The (absolute or relative) path on the local file system
-            where the data objects and collections wil be copied to.
+            where the data objects and collections will be copied to.
 
         recurse: bool (default: False)
             Whether to use recursion, meaning that also matching collections
@@ -275,7 +275,7 @@ class BulkManager(Manager):
 
         irods_path: str (default: '.')
             The (absolute or relative) path on the iRODS file system
-            where the local files and folders wil be copied to.
+            where the local files and folders will be copied to.
 
         recurse: bool (default: False)
             Whether to use recursion, meaning that also matching folders

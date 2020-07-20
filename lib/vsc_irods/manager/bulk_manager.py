@@ -505,6 +505,7 @@ class BulkManager(Manager):
                 else:
                     self.log('Skipping collection %s (no recursion)' % item,
                              verbose)
+                    continue
             else:
                 dirname = os.path.dirname(path)
                 basename = os.path.basename(path)

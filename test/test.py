@@ -371,8 +371,18 @@ def test_size(session, tmpdir):
         total += size
     assert total == 3277, total
 
+    # Check with the parent collection, non-recursively
+    results = [result for result in session.bulk.size('data/', recurse=False,
+                                                      verbose=True)]
+    assert len(results) == 0, 'Getting the size of a collection in a ' + \
+                              'non-recursive manner should give no results'
+
     # Check with the parent collection, recursively
-    path, size = next(session.bulk.size('data/', recurse=True, verbose=True))
+    results = [result for result in session.bulk.size('data/', recurse=True,
+                                                      verbose=True)]
+    assert len(results) == 1, 'Getting the size of a collection in a ' + \
+                              'non-recursive manner should give 1 result'
+    path, size = results[0]
     assert total == size, (total, size)
 
     remove_tmpdir(session, tmpdir)
@@ -415,13 +425,13 @@ def test_move(session, tmpdir):
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
-        test_absolute_paths(session, tmpdir)
-        test_imkdir(session, tmpdir)
-        test_put(session, tmpdir)
-        test_remove(session, tmpdir)
-        test_get(session, tmpdir)
-        test_find(session, tmpdir)
-        test_metadata(session, tmpdir)
-        test_add_job_metadata(session, tmpdir)
+        #test_absolute_paths(session, tmpdir)
+        #test_imkdir(session, tmpdir)
+        #test_put(session, tmpdir)
+        #test_remove(session, tmpdir)
+        #test_get(session, tmpdir)
+        #test_find(session, tmpdir)
+        #test_metadata(session, tmpdir)
+        #test_add_job_metadata(session, tmpdir)
         test_size(session, tmpdir)
-        test_move(session, tmpdir)
+        #test_move(session, tmpdir)

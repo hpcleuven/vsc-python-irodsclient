@@ -24,9 +24,14 @@ arg_parser.add_argument('-d', '--destination', default='.',
 arg_parser.add_argument('-r', '--recurse', action='store_true',
                         help='Turns on recursion')
 
-arg_parser.add_argument('-f', '--force', action='store_true',
-                        help='Force the overwriting of existing iRODS data '
-                        'objects')
+arg_parser.add_argument('-n', '--no-clobber', action='store_true',
+                        help='Do not overwrite existing data objects. '
+                        'If enabled, such transfers will be skipped.')
+
+arg_parser.add_argument('-i', '--interactive', action='store_true',
+                        help='Switch to an "interactive" mode where you will '
+                        'be asked before overwriting existing data objects. '
+                        'If enabled, the "--no-clobber" option is ignored.')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
                         help='Increases the verbosity level')
@@ -38,5 +43,6 @@ with VSCiRODSSession(txt='-') as session:
     for arg in options.args:
         session.bulk.put(arg, irods_path=options.destination,
                          recurse=options.recurse,
-                         force=options.force,
+                         clobber=not options.no_clobber,
+                         interactive=options.interactive,
                          verbose=options.verbose)

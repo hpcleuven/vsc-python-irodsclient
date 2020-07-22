@@ -29,9 +29,14 @@ arg_parser.add_argument('dest',
                         'in a pattern, the pattern needs to be enclosed in '
                         'quotes to avoid shell expansion to local paths.')
 
+arg_parser.add_argument('-n', '--no-clobber', action='store_true',
+                        help='Do not overwrite existing data objects. '
+                        'If enabled, such moves will be skipped.')
+
 arg_parser.add_argument('-i', '--interactive', action='store_true',
                         help='Switch to an "interactive" mode where you will '
-                        'be asked for confirmation before each move')
+                        'be asked before overwriting existing data objects. '
+                        'If enabled, the "--no-clobber" option is ignored.')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
                         help='Increases the verbosity level')
@@ -42,5 +47,6 @@ options = arg_parser.parse_args()
 with VSCiRODSSession(txt='-') as session:
     for arg in options.args:
         session.bulk.move(arg, options.dest,
-                          prompt=options.interactive,
+                          clobber=not options.no_clobber,
+                          interactive=options.interactive,
                           verbose=options.verbose)

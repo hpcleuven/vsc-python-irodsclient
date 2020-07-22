@@ -20,15 +20,15 @@ arg_parser.add_argument('args', nargs='*',
                         'in a pattern, the pattern needs to be enclosed in '
                         'quotes to avoid shell expansion to local paths.')
 
-arg_parser.add_argument('-i', '--interactive', action='store_true',
-                        help='Switch to an "interactive" mode where you will '
-                        'be asked for confirmation before any removal')
-
 arg_parser.add_argument('-r', '--recurse', action='store_true',
                         help='Turns on recursion')
 
 arg_parser.add_argument('-f', '--force', action='store_true',
                         help='Complete removal, instead of sending to trash')
+
+arg_parser.add_argument('-i', '--interactive', action='store_true',
+                        help='Switch to an "interactive" mode where you will '
+                        'be asked for confirmation before any removal')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
                         help='Increases the verbosity level')
@@ -38,7 +38,7 @@ options = arg_parser.parse_args()
 
 with VSCiRODSSession(txt='-') as session:
     for arg in options.args:
-        session.bulk.remove(arg, prompt=options.interactive,
-                            recurse=options.recurse,
+        session.bulk.remove(arg, recurse=options.recurse,
                             force=options.force,
+                            interactive=options.interactive,
                             verbose=options.verbose)

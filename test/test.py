@@ -97,13 +97,13 @@ def test_put(session, tmpdir):
     session.bulk.put('./data/molecule_names*', irods_path=tmpdir, recurse=True,
                      verbose=True)
 
-    print('> Expecting a message that an object with same name already exists:')
+    print('> Expecting a message that this transfer will be skipped:')
     session.bulk.put('data/molecule_names.txt', irods_path=tmpdir,
-                     recurse=False, verbose=True)
+                     clobber=False, recurse=False, verbose=True)
 
     print('> No such message expected here:')
     session.bulk.put('data/molec*', irods_path=tmpdir, recurse=True,
-                     force=True, verbose=True)
+                     verbose=True)
 
     hits = session.search.glob(tmpdir + '/molec*', debug=True)
     expected = ['%s/molecules' % tmpdir, '%s/molecule_names.txt' % tmpdir]
@@ -156,9 +156,9 @@ def test_get(session, tmpdir):
     with tempfile.TemporaryDirectory() as tmpdest:
         print('Using temporary test directory:', tmpdest)
         session.bulk.get(testdir, local_path=tmpdest, recurse=True,
-                         verbose=True)
+                         clobber=False, verbose=True)
         session.bulk.get(testdir, local_path=tmpdest, recurse=True,
-                         force=True, verbose=True)
+                         clobber=True, verbose=True)
         d = os.path.join(tmpdest, os.path.basename(testdir))
         assert os.path.isdir(d)
         f = os.path.join(d, os.path.basename(testfile))
@@ -425,13 +425,13 @@ def test_move(session, tmpdir):
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
-        #test_absolute_paths(session, tmpdir)
-        #test_imkdir(session, tmpdir)
-        #test_put(session, tmpdir)
-        #test_remove(session, tmpdir)
-        #test_get(session, tmpdir)
-        #test_find(session, tmpdir)
-        #test_metadata(session, tmpdir)
-        #test_add_job_metadata(session, tmpdir)
+        test_absolute_paths(session, tmpdir)
+        test_imkdir(session, tmpdir)
+        test_put(session, tmpdir)
+        test_remove(session, tmpdir)
+        test_get(session, tmpdir)
+        test_find(session, tmpdir)
+        test_metadata(session, tmpdir)
+        test_add_job_metadata(session, tmpdir)
         test_size(session, tmpdir)
-        #test_move(session, tmpdir)
+        test_move(session, tmpdir)

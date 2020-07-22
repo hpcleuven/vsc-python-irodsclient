@@ -24,7 +24,7 @@ def confirm(operation, kind, item):
 class BulkManager(Manager):
     """ A class for easier 'bulk' operations with the iRODS file system """
 
-    def remove(self, iterator, recurse=False, force=False, prompt=False,
+    def remove(self, iterator, recurse=False, force=False, interactive=False,
                verbose=False, **options):
         """ Remove iRODS data objects and/or collections,
         in a manner that resembles the UNIX 'rm' command.
@@ -51,9 +51,8 @@ class BulkManager(Manager):
             Whether to imediately remove the collections or data objects,
             without putting them in the trash.
 
-        prompt: bool (default: False)
-            Whether to prompt for permission before removing a data
-            object or collection.
+        interactive: bool (default: False)
+            Whether to prompt for permission before every removal.
 
         verbose: bool (default: False)
             Whether to print more output.
@@ -71,7 +70,7 @@ class BulkManager(Manager):
             if self.session.collections.exists(path):
                 # Item is a collection, not an object
                 if recurse:
-                    ok = confirm('remove', 'collection', path) if prompt \
+                    ok = confirm('remove', 'collection', path) if interactive \
                          else True
                     if ok:
                         self.log('Removing collection %s' % path, verbose)
@@ -81,13 +80,14 @@ class BulkManager(Manager):
                     self.log('Skipping collection %s (no recursion)' % item,
                              verbose)
             else:
-                ok = confirm('remove', 'object', path) if prompt else True
+                ok = confirm('remove', 'object', path) if interactive else True
                 if ok:
                     self.log('Removing object %s' % path, verbose)
                     self.session.data_objects.unlink(path, force=force,
                                                      **options)
 
-    def move(self, iterator, irods_path, prompt=False, verbose=False):
+    def move(self, iterator, irods_path, clobber=True, interactive=False,
+             verbose=False):
         """ Moving or renaming iRODS data objects and/or collections,
         similar to the UNIX `mv` command.
 
@@ -113,33 +113,49 @@ class BulkManager(Manager):
             The (absolute or relative) path on the local file system
             where the data objects and collections will moved to.
 
-        prompt: bool (default: False)
-            Whether to prompt for permission before moving a data
-            object or collection.
+        clobber: bool (default: True)
+            Whether to overwrite existing data objects.
+
+        interactive: bool (default: False)
+            Whether to prompt for permission before overwriting
+            existing data objects. If True, the value of the 'clobber'
+            argument is ignored.
 
         verbose: bool (default: False)
             Whether to print more output.
         """
-        def move_one(source, dest):
+        def move_one(src, dest):
             # Move/renames a single item
-            source_abs = self.session.path.get_absolute_irods_path(source)
+            src_abs = self.session.path.get_absolute_irods_path(src)
             dest_abs = self.session.path.get_absolute_irods_path(dest)
 
-            is_collection = self.session.collections.exists(source_abs)
-            kind = 'collection' if is_collection else 'data object'
+            src_is_collection = self.session.collections.exists(src_abs)
+            dest_is_object = self.session.data_objects.exists(dest_abs)
+            kind = 'collection' if src_is_collection else 'data object'
 
-            if prompt:
-                ok = confirm('move', kind, source_abs + ' to ' + dest_abs)
-            else:
-                ok = True
+            ok = True
+
+            if not clobber:
+                ok = not dest_is_object
+
+            if interactive:
+                ok = confirm('move', kind, src_abs + ' to ' + dest_abs)
 
             if ok:
                 self.log('Moving %s %s to destination %s' % \
-                         (kind, source_abs, dest_abs), verbose)
-                if is_collection:
-                    self.session.collections.move(source_abs, dest_abs)
+                         (kind, src_abs, dest_abs), verbose)
+
+                if src_is_collection:
+                    if dest_is_object:
+                        msg = 'Cannot overwrite obj %s with coll %s'
+                        raise ValueError(msg % (dest_abs, src_abs))
+                    else:
+                        self.session.collections.move(src_abs, dest_abs)
                 else:
-                    self.session.data_objects.move(source_abs, dest_abs)
+                    self.session.data_objects.move(src_abs, dest_abs)
+            else:
+                self.log('Skipped moving %s %s to destination %s' % \
+                         (kind, src_abs, dest_abs), verbose)
 
 
         if isinstance(iterator, str):
@@ -150,29 +166,30 @@ class BulkManager(Manager):
         except StopIteration:
             raise ValueError('Iterator yields no data objects or collections')
 
-        idest = self.session.path.get_absolute_irods_path(irods_path)
+        dest = self.session.path.get_absolute_irods_path(irods_path)
 
         item = None
         for item in iterator:
             # There is more than one item, so irods_path needs
             # to be an existing collection
-            assert self.session.collections.exists(idest), \
-                   'Target collection %s does not exist' % idest
+            assert self.session.collections.exists(dest), \
+                   'Target collection %s does not exist' % dest
 
-            move_one(previous_item, idest)
+            move_one(previous_item, dest)
             previous_item = item
 
         if item is not None:
-            move_one(item, idest)
+            move_one(item, dest)
         else:
             # The iterator only held 1 item originally,
             # and it hasn't been processed yet
-            move_one(previous_item, idest)
+            move_one(previous_item, dest)
 
         return
 
-    def get(self, iterator, local_path='.', recurse=False, force=False,
-            return_data_objects=False, verbose=False, **options):
+    def get(self, iterator, local_path='.', recurse=False, clobber=True,
+            interactive=False, return_data_objects=False, verbose=False,
+            **options):
         """ Copy iRODS data objects and/or collections to the local machine.
 
         Examples:
@@ -198,12 +215,19 @@ class BulkManager(Manager):
             Whether to use recursion, meaning that also matching collections
             and their data objects and subcollections will be copied.
 
-        force: bool (default: False)
+        clobber: bool (default: True)
             Whether to overwrite existing local files.
+
+        interactive: bool (default: False)
+            Whether to prompt for permission before overwriting
+            existing local files. If True, the value of the 'clobber'
+            argument is ignored.
 
         return_data_objects: (default: False)
             Whether to return a list of iRODSDataObject instances
-            of the uploaded data objects.
+            of the uploaded data objects, instead of downloading
+            them to the local file system. If True, the 'clobber'
+            and 'interactive' arguments are ignored.
 
         verbose: bool (default: False)
             Whether to print more output.
@@ -233,28 +257,48 @@ class BulkManager(Manager):
                         os.mkdir(d)
 
                     self.get(item + '/*', local_path=d, recurse=True,
+                             clobber=clobber, interactive=interactive,
                              return_data_objects=return_data_objects,
-                             verbose=verbose, force=force, **options)
+                             verbose=verbose, **options)
                 else:
                     self.log('Skipping collection %s (no recursion)' % item,
                              verbose)
             else:
                 if return_data_objects:
                     self.log('Getting object %s' % item, verbose)
+                    obj = self.session.data_objects.get(path, file=None,
+                                                        **options)
+                    objects.append(obj)
                 else:
-                    self.log('Getting object %s to destination %s' % \
-                             (path, local_path), verbose)
+                    name = os.path.basename(path)
+                    file_exists = os.path.exists(os.path.join(local_path, name))
 
-                f = None if return_data_objects else local_path
-                extra_options = {FORCE_FLAG_KW: ''} if force else {}
-                obj = self.session.data_objects.get(path, file=f, **options,
-                                                    **extra_options)
-                objects.append(obj)
+                    ok = True
 
-        return objects if return_data_objects else None
+                    if not clobber:
+                        ok = not file_exists
 
-    def put(self, iterator, irods_path='.', recurse=False, force=False,
-            verbose=False, create_options={}, **options):
+                    if interactive:
+                        ok = confirm('get', 'object',
+                                     path +' to destination ' + local_path)
+
+                    if ok:
+                        self.log('Getting object %s to destination %s' % \
+                                 (path, local_path), verbose)
+                        extra_options = {FORCE_FLAG_KW: ''}
+                        obj = self.session.data_objects.get(path,
+                                                            file=local_path,
+                                                            **extra_options,
+                                                            **options)
+                    else:
+                        self.log('Skipped getting object %s to destination %s' \
+                                 % (path, local_path), verbose)
+
+        if return_data_objects:
+            return objects
+
+    def put(self, iterator, irods_path='.', recurse=False, clobber=True,
+            interactive=False, verbose=False, create_options={}, **options):
         """ Copy local files and/or folders to the iRODS server,
         in a manner that resembles the UNIX 'cp' command.
 
@@ -281,8 +325,13 @@ class BulkManager(Manager):
             Whether to use recursion, meaning that also matching folders
             and their files and subfolders will be copied to the iRODS server.
 
-        force: bool (default: False)
+        clobber: bool (default: True)
             Whether to overwrite existing data objects.
+
+        interactive: bool (default: False)
+            Whether to prompt for permission before overwriting
+            existing data objects. If True, the value of the 'clobber'
+            argument is ignored.
 
         verbose: bool (default: False)
             Whether to print more output.
@@ -298,39 +347,51 @@ class BulkManager(Manager):
         if type(iterator) is str:
             iterator = glob.iglob(iterator)
 
-        idest = self.session.path.get_absolute_irods_path(irods_path)
+        dest = self.session.path.get_absolute_irods_path(irods_path)
 
-        assert self.session.collections.exists(idest), \
-               'Collection %s does not exist' % idest
+        assert self.session.collections.exists(dest), \
+               'Collection %s does not exist' % dest
 
         for item in iterator:
-            item = item.rstrip('/')
-            path = os.path.join(idest, os.path.basename(item))
+            local_path = item.rstrip('/')
+            path = os.path.join(dest, os.path.basename(local_path))
 
-            if os.path.isdir(item):
+            if os.path.isdir(local_path):
                 if recurse:
                     if not self.session.collections.exists(path):
                         self.log('Creating collection: %s' % path, verbose)
                         self.session.collections.create(path, recurse=True,
                                                         **create_options)
 
-                    self.put(item + '/*', irods_path=path, recurse=True,
-                             force=force, create_options=create_options,
-                             verbose=verbose, **options)
+                    self.put(local_path + '/*', irods_path=path, recurse=True,
+                             clobber=clobber, interactive=interactive,
+                             create_options=create_options, verbose=verbose,
+                             **options)
                 else:
-                    self.log('Skipping collection %s (no recursion)' % item,
-                             verbose)
+                    self.log('Skipping collection %s (no recursion)' % \
+                             local_path, verbose)
 
-            elif os.path.isfile(item):
-                if self.session.data_objects.exists(path) and not force:
-                    self.log('Skipping object "%s" because an object with the' \
-                             ' same name already exists in collection "%s" ' \
-                             '(enable the "force" option to overwrite)' % \
-                             (item, idest), verbose)
+            elif os.path.isfile(local_path):
+                object_exists = self.session.data_objects.exists(path)
+
+                ok = True
+
+                if not clobber:
+                    ok = not object_exists
+
+                if interactive:
+                    ok = confirm('put', 'file',
+                                 local_path +' in collection ' + dest)
+
+                if ok:
+                    self.log('Putting file %s in collection %s' % \
+                             (local_path, dest), verbose)
+                    self.session.data_objects.put(local_path, dest + '/',
+                                                  **options)
                 else:
-                    self.log('Putting object %s in collection %s' % \
-                             (item, idest), verbose)
-                    self.session.data_objects.put(item, idest + '/', **options)
+                    self.log('Skipped putting file %s in collection %s' % \
+                             (local_path, dest), verbose)
+
 
     def metadata(self, iterator, action='add', recurse=False, collection_avu=[],
                  object_avu=[], verbose=False):

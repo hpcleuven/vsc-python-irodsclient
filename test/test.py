@@ -392,17 +392,19 @@ def test_size(session, tmpdir):
 def test_move(session, tmpdir):
     create_tmpdir(session, tmpdir)
 
+    from irods.exception import OperationNotSupported
+
     session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
     session.path.ichdir(tmpdir)
 
     try:
-        session.bulk.move('/data/molecules', '/data/molecule_names.txt',
+        session.bulk.move('data/molecules', 'data/molecule_names.txt',
                           verbose=True)
-    except ValueError:
+    except OperationNotSupported:
         pass
     else:
         msg = 'Moving a collection to an existing data object '
-        msg += 'is expected to raise a ValueError'
+        msg += 'is expected to raise an OperationNotSupported error'
         raise RuntimeError(msg)
 
     # Rename a single data object

@@ -1,6 +1,8 @@
 import os
 import glob
 from irods.column import Criterion
+from irods.exception import (CollectionDoesNotExist, OperationNotSupported,
+                             MultipleResultsFound)
 from irods.keywords import FORCE_FLAG_KW
 from irods.meta import iRODSMeta
 from irods.models import Collection, DataObject
@@ -91,8 +93,8 @@ class BulkManager(Manager):
         """ Moving or renaming iRODS data objects and/or collections,
         similar to the UNIX `mv` command.
 
-        Raises an AssertionError if the iterator corresponds to more than
-        one item and the irods_path destination does not correspond to an
+        Raises an CollectionDoesNotExist if the iterator corresponds to more
+        than one item and the irods_path destination does not correspond to an
         existing collection.
 
         Examples:
@@ -148,7 +150,7 @@ class BulkManager(Manager):
                 if src_is_collection:
                     if dest_is_object:
                         msg = 'Cannot overwrite obj %s with coll %s'
-                        raise ValueError(msg % (dest_abs, src_abs))
+                        raise OperationNotSupported(msg % (dest_abs, src_abs))
                     else:
                         self.session.collections.move(src_abs, dest_abs)
                 else:
@@ -164,7 +166,7 @@ class BulkManager(Manager):
         try:
             previous_item = next(iterator)
         except StopIteration:
-            raise ValueError('Iterator yields no data objects or collections')
+            raise StopIteration('Iterator yields no objects or collections')
 
         dest = self.session.path.get_absolute_irods_path(irods_path)
 
@@ -172,8 +174,8 @@ class BulkManager(Manager):
         for item in iterator:
             # There is more than one item, so irods_path needs
             # to be an existing collection
-            assert self.session.collections.exists(dest), \
-                   'Target collection %s does not exist' % dest
+            if not self.session.collections.exists(dest):
+                raise CollectionDoesNotExist(dest)
 
             move_one(previous_item, dest)
             previous_item = item
@@ -349,8 +351,8 @@ class BulkManager(Manager):
 
         dest = self.session.path.get_absolute_irods_path(irods_path)
 
-        assert self.session.collections.exists(dest), \
-               'Collection %s does not exist' % dest
+        if not self.session.collections.exists(dest):
+            raise CollectionDoesNotExist(dest)
 
         for item in iterator:
             local_path = item.rstrip('/')
@@ -434,7 +436,8 @@ class BulkManager(Manager):
         if isinstance(iterator, str):
             iterator = self.session.search.iglob(iterator)
 
-        assert action in ['add', 'remove'], 'Unknown action: %s' % action
+        if action not in ['add', 'remove']:
+            raise OperationNotSupported('Unknown action "%s"' % action)
 
         if action == 'add':
             log_msg = 'Adding metadata {avu} to {kind} {path}'
@@ -576,8 +579,9 @@ class BulkManager(Manager):
                 q = self.session.query(*fields).filter(*criteria)
 
                 results = [result for result in q.get_results()]
-                assert len(results) == 1, 'Different replicas of data ' + \
-                       'object %s have different sizes' % path
+                if len(results) > 1:
+                    raise MultipleResultsFound('Different replicas of data ' + \
+                                        'object %s have different sizes' % path)
 
                 size = results[0][DataObject.size]
 

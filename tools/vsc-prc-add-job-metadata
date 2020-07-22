@@ -23,10 +23,10 @@ arg_parser.add_argument('args', nargs='*',
                         'quotes to avoid shell expansion to local paths.')
 
 arg_parser.add_argument('-r', '--recurse', action='store_true',
-                        help='Turns on recursion')
+                        help='Turns on recursion.')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Increases the verbosity level')
+                        help='Increases the verbosity level.')
 
 options = arg_parser.parse_args()
 

@@ -20,10 +20,10 @@ arg_parser.add_argument('args', nargs='*',
                         'quotes to avoid shell expansion to local paths.')
 
 arg_parser.add_argument('-p', '--parents', action='store_true',
-                        help='Make parent directories as needed')
+                        help='Make parent directories as needed.')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Increases the verbosity level')
+                        help='Increases the verbosity level.')
 
 options = arg_parser.parse_args()
 

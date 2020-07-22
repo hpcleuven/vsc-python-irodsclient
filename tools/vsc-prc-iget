@@ -25,7 +25,7 @@ arg_parser.add_argument('-d', '--destination', default='.',
                         'Defaults to the current working directory.')
 
 arg_parser.add_argument('-r', '--recurse', action='store_true',
-                        help='Turns on recursion')
+                        help='Turns on recursion.')
 
 arg_parser.add_argument('-n', '--no-clobber', action='store_true',
                         help='Do not overwrite existing local files. '
@@ -37,7 +37,7 @@ arg_parser.add_argument('-i', '--interactive', action='store_true',
                         'If enabled, the "--no-clobber" option is ignored.')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Increases the verbosity level')
+                        help='Increases the verbosity level.')
 
 options = arg_parser.parse_args()
 

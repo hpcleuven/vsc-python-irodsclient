@@ -23,13 +23,13 @@ arg_parser.add_argument('args', nargs='*',
 
 arg_parser.add_argument('-H', '--human-readable', action='store_true',
                         help='Instead of bytes, print in a more readable '
-                        'units of powers of 1024 bytes (e.g. "42M")')
+                        'units of powers of 1024 bytes (e.g. "42M").')
 
 arg_parser.add_argument('-r', '--recurse', action='store_true',
-                        help='Turns on recursion')
+                        help='Turns on recursion.')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Increases the verbosity level')
+                        help='Increases the verbosity level.')
 
 options = arg_parser.parse_args()
 

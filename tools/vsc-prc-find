@@ -56,18 +56,18 @@ arg_parser.add_argument('-t', '--types', default='d,f',
                         help='Comma-separated list of one or more of the '
                         'following characters to select the type of results '
                         'to include: "d" for directories (i.e. collections), '
-                        '"f" for files (i.e. data objects)')
+                        '"f" for files (i.e. data objects).')
 
 arg_parser.add_argument('--mindepth', default=0, type=int,
                         help='Minimal depth with respect to the root '
-                        'collection (default: 0, i.e. no minimum limit)')
+                        'collection (default: 0, i.e. no minimum limit).')
 
 arg_parser.add_argument('--maxdepth', default=-1, type=int,
                         help='Maximal depth with respect to the root '
-                        'collection (default: -1, i.e. no maximum limit)')
+                        'collection (default: -1, i.e. no maximum limit).')
 
 arg_parser.add_argument('--debug', action='store_true',
-                        help='Increases the verbosity level for debugging')
+                        help='Increases the verbosity level for debugging.')
 
 options = arg_parser.parse_args()
 

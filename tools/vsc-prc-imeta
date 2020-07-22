@@ -24,23 +24,23 @@ arg_parser.add_argument('args', nargs='*',
 
 arg_parser.add_argument('--action', default='add',
                         help='The action to perform. Choose either "add" or '
-                        '"remove"')
+                        '"remove".')
 
 arg_parser.add_argument('--collection_avu', action='append',
                         help='AVU tuple to be added to the matching '
                         'collections, in the form of a comma-separated '
-                        'AttName[,AttValue[,AttUnits]] list')
+                        'AttName[,AttValue[,AttUnits]] list.')
 
 arg_parser.add_argument('--object_avu', action='append',
                         help='AVU tuple to be added to the matching '
                         'data objects, in the form of a comma-separated '
-                        'AttName[,AttValue[,AttUnits]] list')
+                        'AttName[,AttValue[,AttUnits]] list.')
 
 arg_parser.add_argument('-r', '--recurse', action='store_true',
-                        help='Turns on recursion')
+                        help='Turns on recursion.')
 
 arg_parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Increases the verbosity level')
+                        help='Increases the verbosity level.')
 
 options = arg_parser.parse_args()
 

@@ -395,6 +395,16 @@ def test_move(session, tmpdir):
     session.bulk.put('data', irods_path=tmpdir, recurse=True, verbose=True)
     session.path.ichdir(tmpdir)
 
+    try:
+        session.bulk.move('/data/molecules', '/data/molecule_names.txt',
+                          verbose=True)
+    except ValueError:
+        pass
+    else:
+        msg = 'Moving a collection to an existing data object '
+        msg += 'is expected to raise a ValueError'
+        raise RuntimeError(msg)
+
     # Rename a single data object
     source, dest = 'data/molecule_names.txt', 'data/names.txt'
     session.bulk.move(source, dest, verbose=True)

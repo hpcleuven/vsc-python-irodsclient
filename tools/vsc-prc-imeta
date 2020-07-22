@@ -23,8 +23,8 @@ arg_parser.add_argument('args', nargs='*',
                         'quotes to avoid shell expansion to local paths.')
 
 arg_parser.add_argument('--action', default='add',
-                        help='The action to perform. Choose either "add" or '
-                        '"remove".')
+                        help='The action to perform. Choose either "add" '
+                        '(default)  or "remove".')
 
 arg_parser.add_argument('--collection_avu', action='append',
                         help='AVU tuple to be added to the matching '

@@ -46,7 +46,7 @@ To this end, VSC-PRC offers a Python module and associated command line scripts:
     >>> with VSCiRODSSession() as session:
     >>>     for item in session.search.find('~', pattern='*.txt', types='f',
     >>>                                     object_avu=('Author', 'Me')):
-    >>>         print(x)
+    >>>         print(item)
 
   This can be used in conjunction with the 'bulk' operations, e.g.:
 

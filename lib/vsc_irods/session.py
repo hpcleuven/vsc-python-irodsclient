@@ -23,8 +23,9 @@ class VSCiRODSSession(iRODSSession):
 
     	The initial iRODS current working directory is set
     	to the user's iRODS "home" directory
-    	(see :func:`manager.PathManager.get_irods_home`)
-    	This can be changed with :func:`VSCiRODSSession.ichdir`
+    	(see :func:`vsc_irods.manager.path_manager.PathManager.get_irods_home`)
+    	This can be changed with
+        :func:`vsc_irods.manager.path_manager.PathManager.ichdir`.
 
     Arguments:
 

@@ -167,7 +167,7 @@ class SearchManager(Manager):
         Examples:
 
         >>> session.find('.', pattern='*mol*/*.xyz', types='f',
-                         object_avu=('=,kind', 'like,%organic'))
+        >>>              object_avu=('=,kind', 'like,%organic'))
             ['data/molecules/c6h6.xyz', './data/molecules/ch3cooh.xyz']
         >>> session.find('~/data*', pattern='molecules', types='d')
             ['~/data/molecules']
@@ -207,7 +207,7 @@ class SearchManager(Manager):
             One or several attribute[-value[-unit]] patterns to be used
             in filtering data objects.
 
-		debug: bool (default: False)
+        debug: bool (default: False)
             Set to True for debugging info
         """
         # Process arguments:

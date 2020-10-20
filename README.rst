@@ -87,7 +87,7 @@ Dependencies
 ============
 
 * Python3
-* python-irodsclient
+* python-irodsclient >= v0.8.4
 
 
 Installation

@@ -289,7 +289,7 @@ class BulkManager(Manager):
                                  (path, local_path), verbose)
                         extra_options = {FORCE_FLAG_KW: ''}
                         obj = self.session.data_objects.get(path,
-                                                            file=local_path,
+                                                            local_path,
                                                             **extra_options,
                                                             **options)
                     else:

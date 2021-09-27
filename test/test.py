@@ -271,8 +271,7 @@ def test_metadata(session, tmpdir):
         for obj in session.bulk.get(iterator, return_data_objects=True,
                                     verbose=True):
             counter += 1
-            key = attribute.title().lower()
-            value_get = obj.metadata.get_one(key).value
+            value_get = obj.metadata.get_one(attribute).value
             assert fnmatch.fnmatch(value_get, pattern), (value_get, value)
 
         assert counts[value] == counter, (value, counts[value], counter)

@@ -100,6 +100,9 @@ Installation
 * Add the :code:`$VSC_PRC_ROOT/tools` directory to your :code:`$PATH`
 * Run the tests in the :code:`$VSC_PRC_ROOT/test` folder
 
+Note: the last test in test.py assumes the iCAT database is case-sensitive.
+If this is not the case for your environment, feel free to comment out this test.
+
 
 On VSC's BrENIAC cluster, VSC-PRC and its dependencies are also available
 as a module:

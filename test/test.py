@@ -210,6 +210,40 @@ def test_find(session, tmpdir):
     return
 
 
+def test_case_sensitivity(session, tmpdir):
+    # Checks whether avus retain their capital letters when added
+    # Assumes the iCAT database is case-sensitive.
+    # If this is not the case, feel free to comment this testcase
+    # at the end of the script.
+
+
+    create_tmpdir(session, tmpdir)
+
+    attribute = 'kind' 
+    value1 = 'organic'
+    value2 = 'Organic'
+    
+    session.bulk.put('data/molecules/ch*', irods_path=tmpdir, verbose=True, recurse=True)
+
+    session.bulk.metadata(tmpdir+"/ch2och2.xyz", object_avu=(attribute, value1),
+                              action='add', verbose=True)
+    session.bulk.metadata(tmpdir+"/ch3cooh.xyz", object_avu=(attribute, value2),
+                              action='add', verbose=True)
+ 
+    avus = []
+    for obj in session.bulk.get(tmpdir+"/ch*", return_data_objects=True,
+                                    verbose=True):
+        value = obj.metadata.get_one(attribute).value
+        avus.append(value)
+    
+    # Comparing the two avu's
+    assert len(avus) == 2
+    assert avus[0] != avus[1] and avus[0].lower() == avus[1].lower(), \
+           "The iCAT database is not case-sensitive."
+
+    remove_tmpdir(session, tmpdir)
+    return
+
 def test_metadata(session, tmpdir):
     create_tmpdir(session, tmpdir)
 
@@ -436,13 +470,14 @@ def test_move(session, tmpdir):
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
         tmpdir = '~/.irodstest'
-        test_absolute_paths(session, tmpdir)
-        test_imkdir(session, tmpdir)
-        test_put(session, tmpdir)
-        test_remove(session, tmpdir)
-        test_get(session, tmpdir)
-        test_find(session, tmpdir)
-        test_metadata(session, tmpdir)
-        test_add_job_metadata(session, tmpdir)
-        test_size(session, tmpdir)
-        test_move(session, tmpdir)
+        #test_absolute_paths(session, tmpdir)
+        #test_imkdir(session, tmpdir)
+        #test_put(session, tmpdir)
+        #test_remove(session, tmpdir)
+        #test_get(session, tmpdir)
+        #test_find(session, tmpdir)
+        #test_metadata(session, tmpdir)
+        #test_add_job_metadata(session, tmpdir)
+        #test_size(session, tmpdir)
+        #test_move(session, tmpdir)
+        test_case_sensitivity(session, tmpdir)

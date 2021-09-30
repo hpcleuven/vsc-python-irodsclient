@@ -109,7 +109,7 @@ as a module:
 
 .. code:: bash
 
-    module load vsc-python-irodsclient/development
+    module load vsc-python-irodsclient/0.1-python-irodsclient-0.8.4
 
 .. _VSC: https://vscentrum.be
 .. _PRC: https://github.com/irods/python-irodsclient

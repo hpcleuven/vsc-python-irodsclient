@@ -480,4 +480,5 @@ if __name__ == '__main__':
         test_add_job_metadata(session, tmpdir)
         test_size(session, tmpdir)
         test_move(session, tmpdir)
+
         test_case_sensitivity(session, tmpdir)

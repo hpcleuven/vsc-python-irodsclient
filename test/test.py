@@ -227,9 +227,9 @@ def test_case_sensitivity(session, tmpdir):
     session.bulk.put('data/molecules/ch*', irods_path=tmpdir, verbose=True, recurse=True)
 
     session.bulk.metadata(tmpdir+"/ch2och2.xyz", object_avu=(attribute, givenValue1),
-                              action='add', verbose=True)
+                         action='add', verbose=True)
     session.bulk.metadata(tmpdir+"/ch3cooh.xyz", object_avu=(attribute, givenValue2),
-                              action='add', verbose=True)
+                         action='add', verbose=True)
  
     obj1 = session.bulk.get(tmpdir+"/ch2och2.xyz", return_data_objects=True, verbose=True)[0]
     obj2 = session.bulk.get(tmpdir+"/ch3cooh.xyz", return_data_objects=True, verbose=True)[0]

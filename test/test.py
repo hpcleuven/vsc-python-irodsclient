@@ -220,26 +220,24 @@ def test_case_sensitivity(session, tmpdir):
     create_tmpdir(session, tmpdir)
 
     attribute = 'kind' 
-    value1 = 'organic'
-    value2 = 'Organic'
+    givenValue1 = 'organic'
+    givenValue2 = 'Organic'
+    message = "The iCAT database is not case-sensitive."
     
     session.bulk.put('data/molecules/ch*', irods_path=tmpdir, verbose=True, recurse=True)
 
-    session.bulk.metadata(tmpdir+"/ch2och2.xyz", object_avu=(attribute, value1),
+    session.bulk.metadata(tmpdir+"/ch2och2.xyz", object_avu=(attribute, givenValue1),
                               action='add', verbose=True)
-    session.bulk.metadata(tmpdir+"/ch3cooh.xyz", object_avu=(attribute, value2),
+    session.bulk.metadata(tmpdir+"/ch3cooh.xyz", object_avu=(attribute, givenValue2),
                               action='add', verbose=True)
  
-    avus = []
-    for obj in session.bulk.get(tmpdir+"/ch*", return_data_objects=True,
-                                    verbose=True):
-        value = obj.metadata.get_one(attribute).value
-        avus.append(value)
-    
-    # Comparing the two avu's
-    assert len(avus) == 2
-    assert avus[0] != avus[1] and avus[0].lower() == avus[1].lower(), \
-           "The iCAT database is not case-sensitive."
+    obj1 = session.bulk.get(tmpdir+"/ch2och2.xyz", return_data_objects=True, verbose=True)[0]
+    obj2 = session.bulk.get(tmpdir+"/ch3cooh.xyz", return_data_objects=True, verbose=True)[0]
+
+    returnedValue1 = obj1.metadata.get_one(attribute).value
+    returnedValue2 = obj2.metadata.get_one(attribute).value
+
+    assert returnedValue1 == givenValue1 and returnedValue2 == givenValue2, message
 
     remove_tmpdir(session, tmpdir)
     return
@@ -480,5 +478,4 @@ if __name__ == '__main__':
         test_add_job_metadata(session, tmpdir)
         test_size(session, tmpdir)
         test_move(session, tmpdir)
-
         test_case_sensitivity(session, tmpdir)

@@ -432,6 +432,38 @@ def test_move(session, tmpdir):
     remove_tmpdir(session, tmpdir)
     return
 
+def test_case_sensitivity(session, tmpdir):
+    # Checks whether avus retain their capital letters when added
+    # Assumes the iCAT database is case-sensitive.
+    # If this is not the case, feel free to comment this testcase
+    # at the end of the script.
+
+
+    create_tmpdir(session, tmpdir)
+
+    attribute = 'kind' 
+    givenValue1 = 'organic'
+    givenValue2 = 'Organic'
+    message = "The iCAT database is not case-sensitive."
+    
+    session.bulk.put('data/molecules/ch*', irods_path=tmpdir, verbose=True, recurse=True)
+
+    session.bulk.metadata(tmpdir+"/ch2och2.xyz", object_avu=(attribute, givenValue1),
+                         action='add', verbose=True)
+    session.bulk.metadata(tmpdir+"/ch3cooh.xyz", object_avu=(attribute, givenValue2),
+                         action='add', verbose=True)
+ 
+    obj1 = session.bulk.get(tmpdir+"/ch2och2.xyz", return_data_objects=True, verbose=True)[0]
+    obj2 = session.bulk.get(tmpdir+"/ch3cooh.xyz", return_data_objects=True, verbose=True)[0]
+
+    returnedValue1 = obj1.metadata.get_one(attribute).value
+    returnedValue2 = obj2.metadata.get_one(attribute).value
+
+    assert returnedValue1 == givenValue1 and returnedValue2 == givenValue2, message
+
+    remove_tmpdir(session, tmpdir)
+    return
+
 
 if __name__ == '__main__':
     with VSCiRODSSession(txt='-') as session:
@@ -446,3 +478,4 @@ if __name__ == '__main__':
         test_add_job_metadata(session, tmpdir)
         test_size(session, tmpdir)
         test_move(session, tmpdir)
+        test_case_sensitivity(session, tmpdir)
